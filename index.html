@@ -245,7 +245,7 @@
                 <button id="cancel-delete" class="py-2 px-4 rounded-md text-sm font-semibold bg-slate-200 text-slate-700 hover:bg-slate-300">
                     取消
                 </button>
-                <button id="confirm-delete" class="py-2 px-4 rounded-md text-sm font-semibold bg-red-600 text-white hover:bg-red-700">
+                <button id="confirm-delete" data-mode="item" class="py-2 px-4 rounded-md text-sm font-semibold bg-red-600 text-white hover:bg-red-700">
                     确认删除
                 </button>
             </div>
@@ -272,7 +272,11 @@
             onSnapshot, 
             collection, 
             increment,
-            setLogLevel
+            setLogLevel,
+            query, 
+            where, 
+            getDocs, 
+            arrayUnion 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- 全局变量和Firebase设置 ---
@@ -316,12 +320,16 @@
         let localClosetCache = []; 
         let unsubscribeCloset = null; 
         
-        // 【新增】穿搭历史相关变量
+        // 穿搭历史相关变量
         let wearLogsRef = null;
         let localWearLogsCache = []; 
         let unsubscribeWearLogs = null; 
         
+        // 删除状态：衣橱物品删除状态
         let currentDeleteItem = { id: null, name: null }; 
+        // 删除状态：穿搭记录删除状态
+        let currentDeleteLog = { id: null, itemIds: [] }; 
+        
         let isSignUpMode = false; 
 
         // DOM 元素
@@ -330,14 +338,14 @@
         const authContainer = document.getElementById('auth-container');
         const notSignedInDiv = document.getElementById('not-signed-in');
         
-        // 【更新】Tabs 映射
+        // Tabs 映射
         const tabs = {
             closet: document.getElementById('tab-closet'),
             log: document.getElementById('tab-log'),
             history: document.getElementById('tab-history'), 
             add: document.getElementById('tab-add'),
         };
-        // 【更新】Pages 映射
+        // Pages 映射
         const pages = {
             closet: document.getElementById('page-closet'),
             log: document.getElementById('page-log'),
@@ -359,7 +367,7 @@
         const logEmptyList = document.getElementById('log-empty-list');
         const submitLogWearBtn = document.getElementById('submit-log-wear');
         
-        // 【新增】历史记录 DOM 元素
+        // 历史记录 DOM 元素
         const historyList = document.getElementById('history-list');
         const historyEmpty = document.getElementById('history-empty');
         
@@ -433,7 +441,7 @@
                     closetRef = collection(db, closetColPath);
                     console.log("Firestore 路径:", closetColPath);
                     
-                    // 【新增】穿搭记录集合引用
+                    // 穿搭记录集合引用
                     const wearLogsColPath = `/artifacts/${appId}/users/${userId}/wear_logs`;
                     wearLogsRef = collection(db, wearLogsColPath);
                     console.log("Wear Logs 路径:", wearLogsColPath);
@@ -441,7 +449,7 @@
                     // 启动衣橱的实时监听
                     attachClosetSnapshot();
                     
-                    // 【新增】启动穿搭历史的实时监听
+                    // 启动穿搭历史的实时监听
                     attachWearLogsSnapshot();
                     
                 } else {
@@ -451,15 +459,15 @@
                     userId = null;
                     userEmail = null;
                     if (unsubscribeCloset) unsubscribeCloset(); 
-                    if (unsubscribeWearLogs) unsubscribeWearLogs(); // 【新增】停止监听
+                    if (unsubscribeWearLogs) unsubscribeWearLogs(); 
                     localClosetCache = []; 
-                    localWearLogsCache = []; // 【新增】清空缓存
+                    localWearLogsCache = []; 
                     
                     Object.values(tabs).forEach(tab => tab.disabled = true);
                     
                     renderCloset();
                     renderLogWearPage();
-                    renderWearHistoryPage(); // 【新增】清空历史记录页面
+                    renderWearHistoryPage(); 
                     
                     loadingOverlay.classList.add('hidden'); 
                     notSignedInDiv.classList.remove('hidden'); 
@@ -475,8 +483,6 @@
         /**
          * 3. 登录/注册/注销功能 (未修改)
          */
-        
-        // ... (handleToggleAuthMode, handleAuth, handleSignOut 保持不变) ...
         
         function handleToggleAuthMode(toggle = true) {
             if (toggle) {
@@ -581,7 +587,7 @@
         }
         
         /**
-         * 4.1 【新增】 附加穿搭历史快照监听器
+         * 4.1 附加穿搭历史快照监听器 (未修改)
          */
         function attachWearLogsSnapshot() {
             if (!isAuthReady || !wearLogsRef) return;
@@ -611,8 +617,6 @@
          * 5. 渲染衣橱 (排序 + 显示) (未修改)
          */
         function renderCloset() {
-            // ... (renderCloset 函数保持不变) ...
-            
             closetTableBody.innerHTML = '';
             closetCardList.innerHTML = '';
 
@@ -682,7 +686,6 @@
                             <div class="text-sm font-medium text-slate-700">${item.timesWorn} 次</div>
                         </div>
                         <div>
-                            <div class="text-xs text-slate-500">CPW</div>
                             <div class="text-lg font-bold ${cpwColor}">$${cpw}</div>
                         </div>
                     </div>
@@ -722,7 +725,7 @@
         }
         
         /**
-         * 6.1 【新增】 渲染穿搭历史页面 (Render Wear History Page)
+         * 6.1 渲染穿搭历史页面 (Render Wear History Page) (未修改)
          */
         function renderWearHistoryPage() {
             historyList.innerHTML = ''; 
@@ -738,7 +741,7 @@
             // 辅助函数：根据 ID 查找衣物名称
             const getItemName = (id) => {
                 const item = localClosetCache.find(i => i.id === id);
-                return item ? escapeHTML(item.name) : '已删除的衣物';
+                return item ? escapeHTML(item.name) : '<span class="text-slate-500 font-normal">已删除的衣物</span>';
             };
             
             localWearLogsCache.forEach(log => {
@@ -764,7 +767,13 @@
                             <i data-lucide="calendar" class="w-5 h-5 text-blue-500"></i>
                             ${dateStr}
                         </h3>
-                        <span class="text-sm font-semibold text-slate-600">${log.itemIds.length} 件</span>
+                        <button class="delete-log-btn text-red-500 hover:text-red-700 p-1 rounded transition-colors" 
+                                data-id="${log.id}" 
+                                data-item-ids='${JSON.stringify(log.itemIds)}' 
+                                data-date-str="${dateStr}"
+                                data-item-count="${log.itemIds.length}">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
                     </div>
                     <div class="flex flex-wrap gap-2">
                         ${itemNames}
@@ -774,6 +783,7 @@
             });
             
             lucide.createIcons();
+            attachDeleteLogListeners(); // 绑定穿搭记录删除事件
         }
 
 
@@ -816,7 +826,7 @@
         }
 
         /**
-         * 8. 处理记录穿搭 (更新: 增加写入 wear_logs 逻辑)
+         * 8. 处理记录穿搭 (未修改)
          */
         async function handleLogWear() {
             if (!isAuthReady || !closetRef || !wearLogsRef || !userId) {
@@ -834,11 +844,15 @@
             submitLogWearBtn.innerHTML = '<div class="loader w-5 h-5 rounded-full border-2 border-white/50 border-t-white animate-spin"></div> 正在记录...';
             
             const updates = [];
-            const loggedItemIds = []; // 用于记录本次穿搭的 ID 列表
+            const loggedItemIds = []; 
+            const now = new Date();
+            const { start, end } = getDayBoundary(now);
             
             checkboxes.forEach(cb => {
                 const docId = cb.dataset.id;
-                loggedItemIds.push(docId); // 收集 ID
+                loggedItemIds.push(docId); 
+                
+                // 1. 原子性地更新 closet 中的 timesWorn
                 const itemRef = doc(db, closetRef.path, docId);
                 updates.push(
                     updateDoc(itemRef, {
@@ -848,15 +862,41 @@
             });
 
             try {
-                // 1. 原子性地更新 timesWorn
+                // 执行衣橱更新
                 await Promise.all(updates);
                 
-                // 2. 【新增】 记录穿搭日志到 wear_logs 集合
-                const wearLogEntry = {
-                    date: new Date(), 
-                    itemIds: loggedItemIds
-                };
-                await addDoc(wearLogsRef, wearLogEntry); 
+                // 2. 检查当日是否已有穿搭日志
+                // 匹配日期范围：大于等于当天开始时间，小于第二天开始时间
+                const q = query(
+                    wearLogsRef, 
+                    where('date', '>=', start),
+                    where('date', '<', end)
+                );
+                
+                const existingLogsSnapshot = await getDocs(q);
+                
+                if (existingLogsSnapshot.size > 0) {
+                    // 当日已有日志，进行合并更新
+                    const existingLogDoc = existingLogsSnapshot.docs[0];
+                    const logDocRef = doc(db, wearLogsRef.path, existingLogDoc.id);
+                    
+                    // 使用 arrayUnion 确保 ID 不重复，并将新的 ID 合并到数组中
+                    await updateDoc(logDocRef, {
+                        itemIds: arrayUnion(...loggedItemIds)
+                    });
+                    
+                    console.log("Wear Log: 当日日志合并更新成功", existingLogDoc.id);
+
+                } else {
+                    // 当日无日志，创建新日志
+                    const wearLogEntry = {
+                        date: now, // Firestore 会自动转换为 Timestamp
+                        itemIds: loggedItemIds
+                    };
+                    await addDoc(wearLogsRef, wearLogEntry); 
+                    
+                    console.log("Wear Log: 新日志创建成功");
+                }
                 
                 // 3. 提示和清理
                 showToast(`成功记录 ${updates.length} 件衣服！`, 'success');
@@ -874,7 +914,7 @@
         }
 
         /**
-         * 9. 绑定删除按钮监听 (未修改)
+         * 9. 绑定衣橱删除按钮监听 (未修改)
          */
         function attachDeleteListeners() {
             document.querySelectorAll('.delete-btn').forEach(button => {
@@ -883,16 +923,48 @@
                     currentDeleteItem.id = targetButton.dataset.id;
                     currentDeleteItem.name = targetButton.dataset.name;
                     
+                    // 设置模态框UI为衣橱删除
+                    deleteModal.querySelector('h3').textContent = '确认删除衣物';
+                    deleteModal.querySelector('p:nth-of-type(1)').textContent = '你确定要从衣橱中删除这件衣服吗？这个操作无法撤销。';
                     deleteItemName.textContent = currentDeleteItem.name;
+                    
+                    // 标记确认按钮的操作模式
+                    confirmDeleteBtn.dataset.mode = 'item'; 
+                    
                     deleteModal.classList.remove('hidden');
                 });
             });
         }
         
         /**
-         * 10. 处理删除物品 (未修改)
+         * 9.1 绑定穿搭历史删除按钮监听 (未修改)
          */
-        async function handleDeleteItem() {
+        function attachDeleteLogListeners() {
+            document.querySelectorAll('.delete-log-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const targetButton = e.currentTarget;
+                    currentDeleteLog.id = targetButton.dataset.id;
+                    // 从data属性解析JSON数组
+                    currentDeleteLog.itemIds = JSON.parse(targetButton.dataset.itemIds); 
+
+                    // 设置模态框UI为日志删除
+                    deleteModal.querySelector('h3').textContent = '确认删除穿搭记录';
+                    deleteModal.querySelector('p:nth-of-type(1)').textContent = '你确定要删除这条穿搭记录吗？相关衣服的已穿次数将 -1。';
+                    deleteItemName.textContent = `${targetButton.dataset.dateStr} (共 ${targetButton.dataset.itemCount} 件)`;
+                    
+                    // 标记确认按钮的操作模式
+                    confirmDeleteBtn.dataset.mode = 'log'; 
+                    
+                    deleteModal.classList.remove('hidden');
+                });
+            });
+        }
+
+        
+        /**
+         * 10. 处理删除衣物 (未修改)
+         */
+        async function handleDeleteItemFromCloset() {
             if (!isAuthReady || !closetRef || !currentDeleteItem.id) return;
             
             try {
@@ -909,8 +981,92 @@
             }
         }
 
+        /**
+         * 10.1 处理删除穿搭记录 (修改：增加检查衣物是否存在)
+         */
+        async function handleDeleteWearLog() {
+            if (!isAuthReady || !closetRef || !wearLogsRef || !currentDeleteLog.id || currentDeleteLog.itemIds.length === 0) {
+                showToast("无法删除穿搭记录：数据缺失。", 'error');
+                return;
+            }
+            
+            // 禁用按钮并显示加载
+            confirmDeleteBtn.disabled = true;
+            confirmDeleteBtn.innerHTML = '<div class="loader w-5 h-5 rounded-full border-2 border-white/50 border-t-white animate-spin"></div> 正在删除...';
+
+            const updates = [];
+            const itemsToDecrement = [];
+            
+            // 【关键修改】：只对仍存在于衣橱中的衣物执行更新操作
+            currentDeleteLog.itemIds.forEach(itemId => {
+                // 检查 itemIds 是否存在于本地缓存 (localClosetCache)
+                const itemExists = localClosetCache.some(item => item.id === itemId);
+                
+                if (itemExists) {
+                    const itemRef = doc(db, closetRef.path, itemId);
+                    updates.push(
+                        updateDoc(itemRef, {
+                            // 使用 increment(-1) 确保原子操作
+                            timesWorn: increment(-1) 
+                        })
+                    );
+                    itemsToDecrement.push(itemId); // 记录实际执行更新的衣物
+                }
+            });
+
+            try {
+                // 1. 批量更新衣橱 (timesWorn -1)
+                await Promise.all(updates);
+                
+                // 2. 删除穿搭记录文档
+                const logDocRef = doc(db, wearLogsRef.path, currentDeleteLog.id);
+                await deleteDoc(logDocRef);
+
+                // 3. 提示消息根据实际更新数量调整
+                const successMessage = itemsToDecrement.length > 0 
+                    ? `穿搭记录成功删除，${itemsToDecrement.length} 件现有衣服次数已 -1。` 
+                    : `穿搭记录成功删除，记录中的衣物均已从衣橱中删除，无需更新次数。`;
+                showToast(successMessage, 'success');
+
+            } catch (error) {
+                console.error("删除穿搭记录失败:", error);
+                showToast(`删除失败: ${error.message}`, 'error');
+            } finally {
+                // 清理状态和模态框
+                deleteModal.classList.add('hidden');
+                currentDeleteLog.id = null;
+                currentDeleteLog.itemIds = [];
+                
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.textContent = '确认删除';
+            }
+        }
+        
+        /**
+         * 11. 模态框确认总处理函数 (未修改)
+         */
+        function handleConfirmDelete() {
+            const mode = confirmDeleteBtn.dataset.mode;
+            if (mode === 'item') {
+                handleDeleteItemFromCloset();
+            } else if (mode === 'log') {
+                handleDeleteWearLog();
+            }
+        }
+
 
         // --- 辅助功能 ---
+
+        /**
+         * 获取当天的边界（用于Firestore查询）
+         * @param {Date} date - 任意 Date 对象
+         * @returns {{start: Date, end: Date}} 当天00:00:00和第二天00:00:00的Date对象
+         */
+        function getDayBoundary(date) {
+            const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const end = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+            return { start, end };
+        }
 
         function switchTab(activeTab) {
             Object.keys(tabs).forEach(key => {
@@ -1017,7 +1173,8 @@
         
         // 删除模态框
         cancelDeleteBtn.addEventListener('click', () => deleteModal.classList.add('hidden'));
-        confirmDeleteBtn.addEventListener('click', handleDeleteItem);
+        // 绑定总处理函数
+        confirmDeleteBtn.addEventListener('click', handleConfirmDelete); 
 
         // --- 启动应用 ---
         document.addEventListener('DOMContentLoaded', () => {
