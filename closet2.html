@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cost Per Wear Tracker (穿搭-性价比追踪)</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Google Font 'Inter' -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 引入Lucide图标库 -->
+    <script src="https://unpkg.com/lucide-react@0.395.0/dist/umd/lucide.js"></script>
+    <style>
+        /* 自定义样式 */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* 浅灰色背景 */
+            background-color: #f3f4f6;
+        }
+        /* 粘性头部 */
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        /* 确保内容区域可滚动 */
+        .content-area {
+            height: calc(100vh - 12rem); /* 减去头部和底部的空间 */
+            overflow-y: auto;
+        }
+        @media (min-width: 640px) {
+            .content-area {
+                height: calc(100vh - 8rem); /* 调整桌面端的头部空间 */
+            }
+        }
+        /* 自定义加载动画 */
+        .loader {
+            border-top-color: #3498db;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        /* 自定义消息提示框 */
+        #toast {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: bottom 0.5s ease-in-out;
+            z-index: 100;
+        }
+        #toast.show {
+            bottom: 30px;
+        }
+        /* 自定义模态框 */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 90;
+        }
+        .modal-content {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+        }
+    </style>
+</head>
+<body class="antialiased text-slate-800">
+
+    <!-- 主容器 -->
+    <div class="max-w-4xl mx-auto min-h-screen bg-white shadow-lg">
+
+        <!-- 加载和认证状态 -->
+        <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col justify-center items-center z-[110]">
+            <div class="loader w-12 h-12 rounded-full border-4 border-gray-200 border-t-blue-500 animate-spin"></div>
+            <p id="loading-text" class="mt-4 text-lg font-medium text-slate-600">正在连接...</p>
+        </div>
+
+        <!-- 头部 -->
+        <header class="sticky-header bg-white border-b border-slate-200 p-4 shadow-sm">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-blue-600">
+                    <i data-lucide="shirt" class="inline-block -mt-1"></i>
+                    我的衣橱 (Cost Per Wear)
+                </h1>
+                <!-- 认证区域 -->
+                <div id="auth-container" class="text-sm">
+                    <!-- JS will populate this -->
+                </div>
+            </div>
+
+            <!-- 导航标签 -->
+            <nav class="mt-4">
+                <div class="flex border-b border-slate-200">
+                    <button id="tab-closet" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-blue-600 border-b-2 border-blue-600 flex items-center justify-center gap-2">
+                        <i data-lucide="warehouse" class="w-5 h-5"></i>
+                        我的衣橱
+                    </button>
+                    <button id="tab-log" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-slate-500 hover:text-blue-500 flex items-center justify-center gap-2">
+                        <i data-lucide="calendar-plus" class="w-5 h-5"></i>
+                        记录穿搭
+                    </button>
+                    <button id="tab-add" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-slate-500 hover:text-blue-500 flex items-center justify-center gap-2">
+                        <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                        添加新衣
+                    </button>
+                </div>
+            </nav>
+        </header>
+
+        <!-- 内容区域 -->
+        <main class="p-4 sm:p-6">
+            <!-- 1. 我的衣橱 (My Closet) -->
+            <div id="page-closet" class="page-content">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">衣橱总览</h2>
+                    <select id="sort-select" class="rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                        <option value="cpw_desc">按CPW降序 (最贵)</option>
+                        <option value="cpw_asc">按CPW升序 (最值)</option>
+                        <option value="times_asc">按穿下次数升序</option>
+                        <option value="times_desc">按穿下次数降序</option>
+                        <option value="name_asc">按名称升序 (A-Z)</option>
+                    </select>
+                </div>
+                
+                <!-- 衣橱列表 (桌面端) -->
+                <div class="hidden sm:block overflow-x-auto rounded-lg border border-slate-200">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">名称</th>
+                                <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">类型</th>
+                                <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">价格</th>
+                                <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">已穿</th>
+                                <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">CPW</th>
+                                <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="closet-table-body" class="bg-white divide-y divide-slate-200">
+                            <!-- JS动态插入 -->
+                            <tr id="closet-empty-row"><td colspan="6" class="p-6 text-center text-slate-500">衣橱是空的，快去添加新衣服吧！</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 衣橱列表 (移动端) -->
+                <div id="closet-card-list" class="sm:hidden space-y-3">
+                    <!-- JS动态插入 -->
+                    <div id="closet-empty-card" class="p-6 text-center text-slate-500 bg-white rounded-lg shadow-sm">衣橱是空的，快去添加新衣服吧！</div>
+                </div>
+            </div>
+
+            <!-- 2. 记录穿搭 (Log Wear) -->
+            <div id="page-log" class="page-content hidden">
+                <h2 class="text-xl font-semibold mb-4">记录今日穿搭 (Today's Outfit)</h2>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+                    <p class="text-slate-600 mb-4">请选择你今天穿了的衣服：</p>
+                    <div id="log-wear-list" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                        <!-- JS动态插入 -->
+                        <p id="log-empty-list" class="text-center text-slate-500 py-4">衣橱里没有衣服哦。</p>
+                    </div>
+                    <button id="submit-log-wear" class="mt-6 w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2">
+                        <i data-lucide="check-circle" class="w-5 h-5"></i>
+                        确认记录
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. 添加新衣 (Add New) -->
+            <div id="page-add" class="page-content hidden">
+                <h2 class="text-xl font-semibold mb-4">添加新衣服</h2>
+                <form id="add-item-form" class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 space-y-4">
+                    <div>
+                        <label for="item-name" class="block text-sm font-medium text-slate-700">衣服名称 (Name)</label>
+                        <input type="text" id="item-name" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="例如: Brandy Melville 灰色卫衣">
+                    </div>
+                    <div>
+                        <label for="item-type" class="block text-sm font-medium text-slate-700">类型 (Type)</label>
+                        <select id="item-type" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                            <option value="">-- 请选择类型 --</option>
+                            <option value="accessory">配饰 (Accessory)</option>
+                            <option value="cami">吊带 (Cami)</option>
+                            <option value="dress">连衣裙 (Dress)</option>
+                            <option value="jacket">外套 (Jacket)</option>
+                            <option value="long-sleeve">长袖 (Long-sleeve)</option>
+                            <option value="pants">裤子 (Pants)</option>
+                            <option value="short-sleeve">短袖 (Short-sleeve)</option>
+                            <option value="skirt">裙子 (Skirt)</option>
+                            <option value="other">其他 (Other)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="item-price" class="block text-sm font-medium text-slate-700">价格 (Price)</label>
+                        <input type="number" id="item-price" min="0" step="0.01" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="例如: 40.00">
+                    </div>
+                    <div>
+                        <label for="item-times-worn" class="block text-sm font-medium text-slate-700">初始已穿次数 (Times Worn)</label>
+                        <input type="number" id="item-times-worn" min="0" step="1" value="0" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                    </div>
+                    <button type="submit" class="w-full bg-green-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 flex items-center justify-center gap-2">
+                        <i data-lucide="save" class="w-5 h-5"></i>
+                        保存到衣橱
+                    </button>
+                </form>
+            </div>
+        </main>
+
+    </div>
+
+    <!-- 消息提示框 (Toast) -->
+    <div id="toast" class="py-3 px-5 rounded-lg shadow-lg text-white font-semibold">
+        <span id="toast-message">...</span>
+    </div>
+
+    <!-- 确认删除模态框 (Modal) -->
+    <div id="delete-modal" class="hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content w-full max-w-sm bg-white rounded-lg shadow-xl p-6">
+            <h3 class="text-lg font-bold text-slate-800">确认删除</h3>
+            <p class="text-sm text-slate-600 mt-2">你确定要从衣橱中删除这件衣服吗？这个操作无法撤销。</p>
+            <p id="delete-item-name" class="text-sm text-center font-semibold bg-slate-100 p-2 my-4 rounded"></p>
+            <div class="flex justify-end gap-3 mt-6">
+                <button id="cancel-delete" class="py-2 px-4 rounded-md text-sm font-semibold bg-slate-200 text-slate-700 hover:bg-slate-300">
+                    取消
+                </button>
+                <button id="confirm-delete" class="py-2 px-4 rounded-md text-sm font-semibold bg-red-600 text-white hover:bg-red-700">
+                    确认删除
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Firebase 脚本 -->
+    <script type="module">
+        // 导入Firebase模块
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, // 恢复匿名登录
+            signInWithCustomToken, 
+            onAuthStateChanged
+            // 移除 GoogleAuthProvider, signInWithPopup, signOut
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            addDoc, 
+            setDoc, 
+            updateDoc, 
+            deleteDoc, 
+            onSnapshot, 
+            collection, 
+            query, 
+            increment,
+            setLogLevel
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- 全局变量和Firebase设置 ---
+        
+        // 开启调试日志
+        setLogLevel('Debug');
+
+        // 从全局变量获取配置 (在Canvas环境中由平台注入)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cost-per-wear-tracker';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            // 备用配置 (用于本地测试)
+            apiKey: "YOUR_FALLBACK_API_KEY",
+            authDomain: "YOUR_FALLBACK_AUTH_DOMAIN",
+            projectId: "YOUR_FALLBACK_PROJECT_ID",
+            storageBucket: "YOUR_FALLBACK_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_FALLBACK_MESSAGING_SENDER_ID",
+            appId: "YOUR_FALLBACK_APP_ID"
+        };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // 初始化Firebase
+        let app, auth, db;
+        let userId = null;
+        let isAuthReady = false;
+        let closetRef = null;
+        let localClosetCache = []; // 本地缓存衣橱数据
+        let currentDeleteItem = { id: null, name: null }; // 存储待删除的物品
+        let unsubscribeCloset = null; // 用于取消快照监听
+
+        // DOM 元素
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingText = document.getElementById('loading-text');
+        const authContainer = document.getElementById('auth-container');
+        
+        const tabs = {
+            closet: document.getElementById('tab-closet'),
+            log: document.getElementById('tab-log'),
+            add: document.getElementById('tab-add'),
+        };
+        const pages = {
+            closet: document.getElementById('page-closet'),
+            log: document.getElementById('page-log'),
+            add: document.getElementById('page-add'),
+        };
+
+        const addItemForm = document.getElementById('add-item-form');
+        const closetTableBody = document.getElementById('closet-table-body');
+        const closetCardList = document.getElementById('closet-card-list');
+        const closetEmptyRow = document.getElementById('closet-empty-row');
+        const closetEmptyCard = document.getElementById('closet-empty-card');
+        
+        const logWearList = document.getElementById('log-wear-list');
+        const logEmptyList = document.getElementById('log-empty-list');
+        const submitLogWearBtn = document.getElementById('submit-log-wear');
+        
+        const sortSelect = document.getElementById('sort-select');
+        
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+
+        const deleteModal = document.getElementById('delete-modal');
+        const deleteItemName = document.getElementById('delete-item-name');
+        const cancelDeleteBtn = document.getElementById('cancel-delete');
+        const confirmDeleteBtn = document.getElementById('confirm-delete');
+
+        // --- 核心功能 ---
+
+        /**
+         * 1. 初始化Firebase和认证
+         */
+        async function initializeFirebase() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                console.log("Firebase a. (初始化成功)");
+                
+                // 1. 设置认证监听器
+                setupAuthListener();
+
+                // 2. 仅在Canvas环境中尝试使用Token登录
+                if (initialAuthToken) {
+                    console.log("使用 custom token 登录...");
+                    loadingText.textContent = "正在认证 (Canvas)...";
+                    await signInWithCustomToken(auth, initialAuthToken);
+                    // onAuthStateChanged 将处理登录成功
+                } else {
+                    // 如果没有 token，onAuthStateChanged 将尝试匿名登录
+                    console.log("没有 initial token，onAuthStateChanged 将处理匿名登录。");
+                }
+            } catch (error) {
+                console.error("Firebase 初始化失败:", error);
+                loadingText.textContent = "初始化失败! " + error.message;
+            }
+        }
+
+        /**
+         * 2. 设置认证监听器 (核心逻辑变更 - 恢复匿名登录)
+         */
+        function setupAuthListener() {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    // --- 用户已登录 ---
+                    console.log("Firebase b. (用户已认证)");
+                    userId = user.uid;
+                    isAuthReady = true;
+                    
+                    // 更新UI, 显示用户ID (缩短版) - 增加锁图标强调持久化
+                    const displayId = escapeHTML(userId.substring(0, 8)) + '...';
+                    authContainer.innerHTML = `
+                        <div class="flex items-center gap-3 text-xs text-slate-500">
+                            <i data-lucide="lock" class="w-4 h-4 text-green-500" title="这是您跨设备持久化的唯一ID"></i>
+                            <span title="这是您跨设备持久化的唯一ID">用户ID: <span class="font-semibold text-slate-800">${displayId}</span></span>
+                        </div>
+                    `;
+
+                    loadingText.textContent = "正在加载您的衣橱...";
+                    loadingOverlay.classList.remove('hidden'); 
+                    
+                    // 定义集合引用
+                    const closetColPath = `/artifacts/${appId}/users/${userId}/closet`;
+                    closetRef = collection(db, closetColPath);
+                    console.log("Firestore 路径:", closetColPath);
+
+                    // 启动衣橱的实时监听
+                    attachClosetSnapshot();
+                    
+                } else {
+                    // --- 用户未登录/登出 ---
+                    console.log("Firebase b. (用户未认证). 尝试建立匿名会话...");
+
+                    isAuthReady = false;
+                    userId = null;
+                    if (unsubscribeCloset) unsubscribeCloset(); // 停止监听
+                    localClosetCache = []; // 清空缓存
+                    
+                    // 如果没有用户会话，强制进行匿名登录
+                    try {
+                        // 标签更改为“临时会话”以区分环境提供的持久化 token
+                        loadingText.textContent = "正在建立临时会话...";
+                        await signInAnonymously(auth);
+                        // 监听器会再次触发，此时 user 将被填充
+                    } catch (error) {
+                        console.error("会话建立失败:", error);
+                        loadingText.textContent = "连接失败! " + error.message;
+                        authContainer.innerHTML = `<span class="text-xs text-red-500">连接错误</span>`;
+                    }
+                    
+                    // 清空UI
+                    renderCloset();
+                    renderLogWearPage();
+                    loadingOverlay.classList.remove('hidden'); // 保持显示
+                    lucide.createIcons();
+                }
+            });
+        }
+        
+        /**
+         * 3. 附加衣橱快照监听器
+         */
+        function attachClosetSnapshot() {
+            if (!isAuthReady || !closetRef) {
+                console.error("Auth 未准备好或 closetRef 未定义");
+                return;
+            }
+
+            if (unsubscribeCloset) {
+                unsubscribeCloset(); // 取消之前的监听
+            }
+
+            console.log("Firestore c. (正在附加快照监听器)");
+            unsubscribeCloset = onSnapshot(closetRef, (snapshot) => {
+                console.log("Firestore d. (收到快照更新)");
+                localClosetCache = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                // 渲染衣橱
+                renderCloset();
+                // 渲染“记录穿搭”页面
+                renderLogWearPage();
+
+                // 隐藏加载遮罩
+                if (!loadingOverlay.classList.contains('hidden')) {
+                     setTimeout(() => {
+                        loadingOverlay.classList.add('hidden');
+                    }, 500); // 稍作延迟, 避免闪烁
+                }
+               
+            }, (error) => {
+                console.error("Firestore 监听失败:", error);
+                loadingText.textContent = "加载衣橱失败! " + error.message;
+            });
+        }
+
+        /**
+         * 4. 渲染衣橱 (排序 + 显示)
+         */
+        function renderCloset() {
+            if (localClosetCache.length === 0) {
+                closetTableBody.innerHTML = ''; // 清空
+                closetCardList.innerHTML = ''; // 清空
+                closetTableBody.appendChild(closetEmptyRow);
+                closetCardList.appendChild(closetEmptyCard);
+                return;
+            }
+
+            // A. 排序
+            const sortedCloset = sortCloset(localClosetCache, sortSelect.value);
+            
+            // B. 清空
+            closetTableBody.innerHTML = '';
+            closetCardList.innerHTML = '';
+
+            // C. 填充
+            sortedCloset.forEach(item => {
+                const cpw = calculateCPW(item.price, item.timesWorn);
+                const cpwColor = getCPWColor(cpw);
+
+                // --- 1. 创建桌面端表格行 ---
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50";
+                tr.innerHTML = `
+                    <td class="py-4 px-4 whitespace-nowrap">
+                        <div class="text-sm font-semibold text-slate-900">${escapeHTML(item.name)}</div>
+                    </td>
+                    <td class="py-4 px-4 whitespace-nowrap">
+                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            ${escapeHTML(item.type)}
+                        </span>
+                    </td>
+                    <td class="py-4 px-4 whitespace-nowrap text-sm text-slate-600">$${item.price.toFixed(2)}</td>
+                    <td class="py-4 px-4 whitespace-nowrap text-sm text-slate-600">${item.timesWorn} 次</td>
+                    <td class="py-4 px-4 whitespace-nowrap text-sm font-bold ${cpwColor}">
+                        $${cpw}
+                    </td>
+                    <td class="py-4 px-4 whitespace-nowrap text-sm font-medium">
+                        <button class="delete-btn text-red-600 hover:text-red-900" data-id="${item.id}" data-name="${escapeHTML(item.name)}">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
+                    </td>
+                `;
+                closetTableBody.appendChild(tr);
+
+                // --- 2. 创建移动端卡片 ---
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-lg shadow-sm border border-slate-200 p-4";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-base font-semibold text-slate-900">${escapeHTML(item.name)}</div>
+                            <span class="mt-1 px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                ${escapeHTML(item.type)}
+                            </span>
+                        </div>
+                        <button class="delete-btn text-red-500 hover:text-red-700 -mt-1 -mr-1 p-1" data-id="${item.id}" data-name="${escapeHTML(item.name)}">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+                        <div>
+                            <div class="text-xs text-slate-500">价格</div>
+                            <div class="text-sm font-medium text-slate-700">$${item.price.toFixed(2)}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500">已穿</div>
+                            <div class="text-sm font-medium text-slate-700">${item.timesWorn} 次</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500">CPW</div>
+                            <div class="text-lg font-bold ${cpwColor}">$${cpw}</div>
+                        </div>
+                    </div>
+                `;
+                closetCardList.appendChild(card);
+            });
+            
+            // 重新激活图标
+            lucide.createIcons();
+            // 重新绑定删除按钮事件
+            attachDeleteListeners();
+        }
+
+        /**
+         * 5. 渲染“记录穿搭”页面
+         */
+        function renderLogWearPage() {
+            if (localClosetCache.length === 0) {
+                logWearList.innerHTML = ''; // 清空
+                logWearList.appendChild(logEmptyList);
+                submitLogWearBtn.disabled = true;
+                return;
+            }
+
+            logWearList.innerHTML = ''; // 清空
+            submitLogWearBtn.disabled = false;
+            
+            // 按名称排序
+            const sortedCloset = sortCloset(localClosetCache, 'name_asc');
+
+            sortedCloset.forEach(item => {
+                const li = document.createElement('label');
+                li.className = "flex items-center space-x-3 bg-slate-50 p-3 rounded-lg hover:bg-slate-100 cursor-pointer";
+                li.innerHTML = `
+                    <input type="checkbox" class="log-wear-checkbox h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" data-id="${item.id}">
+                    <span class="text-sm font-medium text-slate-800">${escapeHTML(item.name)}</span>
+                `;
+                logWearList.appendChild(li);
+            });
+        }
+
+        /**
+         * 6. 处理添加新衣
+         */
+        async function handleAddItem(e) {
+            e.preventDefault();
+            if (!isAuthReady || !closetRef) return;
+
+            const name = document.getElementById('item-name').value.trim();
+            const type = document.getElementById('item-type').value;
+            const price = parseFloat(document.getElementById('item-price').value);
+            const timesWorn = parseInt(document.getElementById('item-times-worn').value);
+
+            if (!name || !type || isNaN(price) || isNaN(timesWorn)) {
+                showToast("请填写所有字段！", 'error');
+                return;
+            }
+
+            const newItem = {
+                name,
+                type,
+                price,
+                timesWorn
+            };
+
+            try {
+                await addDoc(closetRef, newItem);
+                showToast("衣服添加成功！", 'success');
+                addItemForm.reset();
+                // 切换回衣橱视图
+                switchTab('closet');
+            } catch (error) {
+                console.error("添加衣服失败:", error);
+                showToast(`添加失败: ${error.message}`, 'error');
+            }
+        }
+
+        /**
+         * 7. 处理记录穿搭
+         */
+        async function handleLogWear() {
+            if (!isAuthReady || !closetRef) return;
+
+            const checkboxes = document.querySelectorAll('.log-wear-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showToast("你没有选择任何衣服哦！", 'warning');
+                return;
+            }
+
+            submitLogWearBtn.disabled = true;
+            submitLogWearBtn.innerHTML = '<div class="loader w-5 h-5 rounded-full border-2 border-white/50 border-t-white animate-spin"></div> 正在记录...';
+            
+            const updates = [];
+            checkboxes.forEach(cb => {
+                const docId = cb.dataset.id;
+                const itemRef = doc(db, closetRef.path, docId);
+                updates.push(
+                    updateDoc(itemRef, {
+                        timesWorn: increment(1)
+                    })
+                );
+            });
+
+            try {
+                await Promise.all(updates);
+                showToast(`成功记录 ${updates.length} 件衣服！`, 'success');
+                // 取消选中所有复选框
+                checkboxes.forEach(cb => cb.checked = false);
+                // 切换回衣橱视图
+                switchTab('closet');
+            } catch (error) {
+                console.error("记录穿搭失败:", error);
+                showToast(`记录失败: ${error.message}`, 'error');
+            } finally {
+                submitLogWearBtn.disabled = false;
+                submitLogWearBtn.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i> 确认记录';
+                lucide.createIcons();
+            }
+        }
+
+        /**
+         * 8. 绑定删除按钮监听
+         */
+        function attachDeleteListeners() {
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    // 使用 e.currentTarget 确保获取到绑定事件的按钮
+                    const targetButton = e.currentTarget;
+                    currentDeleteItem.id = targetButton.dataset.id;
+                    currentDeleteItem.name = targetButton.dataset.name;
+                    
+                    deleteItemName.textContent = currentDeleteItem.name;
+                    deleteModal.classList.remove('hidden');
+                });
+            });
+        }
+        
+        /**
+         * 9. 处理删除物品
+         */
+        async function handleDeleteItem() {
+            if (!isAuthReady || !closetRef || !currentDeleteItem.id) return;
+            
+            try {
+                const itemRef = doc(db, closetRef.path, currentDeleteItem.id);
+                await deleteDoc(itemRef);
+                showToast(`"${currentDeleteItem.name}" 已删除`, 'success');
+            } catch (error) {
+                console.error("删除失败:", error);
+                showToast(`删除失败: ${error.message}`, 'error');
+            } finally {
+                // 关闭模态框
+                deleteModal.classList.add('hidden');
+                currentDeleteItem.id = null;
+                currentDeleteItem.name = null;
+            }
+        }
+
+        // 移除了 handleGoogleSignIn 和 handleSignOut 函数
+        // ...
+
+
+        // --- 辅助功能 ---
+
+        /**
+         * 切换标签页
+         */
+        function switchTab(activeTab) {
+            Object.keys(tabs).forEach(key => {
+                const tab = tabs[key];
+                const page = pages[key];
+                
+                if (key === activeTab) {
+                    // 激活状态
+                    tab.classList.add('text-blue-600', 'border-blue-600');
+                    tab.classList.remove('text-slate-500');
+                    page.classList.remove('hidden');
+                } else {
+                    // 非激活状态
+                    tab.classList.remove('text-blue-600', 'border-blue-600');
+                    tab.classList.add('text-slate-500');
+                    page.classList.add('hidden');
+                }
+            });
+        }
+        
+        /**
+         * 计算 Cost Per Wear (CPW)
+         */
+        function calculateCPW(price, timesWorn) {
+            if (timesWorn <= 0) {
+                return price.toFixed(2); // 还没穿过，CPW就是原价
+            }
+            return (price / timesWorn).toFixed(2);
+        }
+
+        /**
+         * 根据CPW获取颜色
+         */
+        function getCPWColor(cpw) {
+            cpw = parseFloat(cpw);
+            if (cpw <= 1) return 'text-green-600';
+            if (cpw <= 5) return 'text-yellow-600';
+            if (cpw <= 10) return 'text-orange-600';
+            return 'text-red-600';
+        }
+
+        /**
+         * 排序功能
+         */
+        function sortCloset(closet, sortBy) {
+            return closet.slice().sort((a, b) => {
+                const cpwA = parseFloat(calculateCPW(a.price, a.timesWorn));
+                const cpwB = parseFloat(calculateCPW(b.price, b.timesWorn));
+
+                switch (sortBy) {
+                    case 'cpw_desc':
+                        return cpwB - cpwA; // CPW 降序
+                    case 'cpw_asc':
+                        return cpwA - cpwB; // CPW 升序
+                    case 'times_asc':
+                        return a.timesWorn - b.timesWorn; // 次数 升序
+                    case 'times_desc':
+                        return b.timesWorn - a.timesWorn; // 次数 降序
+                    case 'name_asc':
+                        return a.name.localeCompare(b.name, 'zh-Hans-CN'); // 名称 升序
+                    default:
+                        return cpwB - cpwA;
+                }
+            });
+        }
+
+        /**
+         * 显示消息提示
+         */
+        function showToast(message, type = 'info') {
+            toastMessage.textContent = message;
+            toast.className = 'py-3 px-5 rounded-lg shadow-lg text-white font-semibold'; // 重置
+            
+            if (type === 'success') {
+                toast.classList.add('bg-green-500');
+            } else if (type === 'error') {
+                toast.classList.add('bg-red-500');
+            } else if (type === 'warning') {
+                toast.classList.add('bg-yellow-500');
+            } else {
+                toast.classList.add('bg-blue-500');
+            }
+
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        /**
+         * HTML转义
+         */
+        function escapeHTML(str) {
+            return String(str).replace(/[&<>"']/g, function(match) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                }[match];
+            });
+        }
+
+
+        // --- 事件监听器绑定 ---
+        
+        // 标签页切换
+        Object.keys(tabs).forEach(key => {
+            tabs[key].addEventListener('click', () => switchTab(key));
+        });
+
+        // 表单提交
+        addItemForm.addEventListener('submit', handleAddItem);
+
+        // 记录穿搭提交
+        submitLogWearBtn.addEventListener('click', handleLogWear);
+
+        // 排序选择
+        sortSelect.addEventListener('change', renderCloset);
+        
+        // 删除模态框
+        cancelDeleteBtn.addEventListener('click', () => deleteModal.classList.add('hidden'));
+        confirmDeleteBtn.addEventListener('click', handleDeleteItem);
+
+        // --- 启动应用 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeFirebase();
+            // 激活图标
+            lucide.createIcons();
+            // 默认显示衣橱
+            switchTab('closet');
+        });
+
+    </script>
+</body>
+</html>
