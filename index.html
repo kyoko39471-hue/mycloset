@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cost Per Wear Tracker (穿搭-性价比追踪)</title>
-    <!-- 引入Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入Google Font 'Inter' -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- 引入Lucide图标库 -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
         /* 自定义样式 */
@@ -77,29 +74,23 @@
 </head>
 <body class="antialiased text-slate-800">
 
-    <!-- 主容器 -->
     <div class="max-w-4xl mx-auto min-h-screen bg-white shadow-lg">
 
-        <!-- 加载和认证状态 -->
         <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col justify-center items-center z-[110]">
             <div class="loader w-12 h-12 rounded-full border-4 border-gray-200 border-t-blue-500 animate-spin"></div>
             <p id="loading-text" class="mt-4 text-lg font-medium text-slate-600">正在连接...</p>
         </div>
 
-        <!-- 头部 -->
         <header class="sticky-header bg-white border-b border-slate-200 p-4 shadow-sm">
             <div class="flex justify-between items-center">
                 <h1 class="text-2xl font-bold text-blue-600">
                     <i data-lucide="shirt" class="inline-block -mt-1"></i>
                     我的衣橱 (Cost Per Wear)
                 </h1>
-                <!-- 认证区域 -->
                 <div id="auth-container" class="text-sm">
-                    <!-- JS will populate this with Sign Out button or nothing if loading -->
-                </div>
+                    </div>
             </div>
 
-            <!-- 导航标签 -->
             <nav class="mt-4">
                 <div class="flex border-b border-slate-200">
                     <button id="tab-closet" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-blue-600 border-b-2 border-blue-600 flex items-center justify-center gap-2" disabled>
@@ -110,6 +101,10 @@
                         <i data-lucide="calendar-plus" class="w-5 h-5"></i>
                         记录穿搭
                     </button>
+                    <button id="tab-history" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-slate-500 hover:text-blue-500 flex items-center justify-center gap-2" disabled>
+                        <i data-lucide="history" class="w-5 h-5"></i>
+                        穿搭历史
+                    </button>
                     <button id="tab-add" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-slate-500 hover:text-blue-500 flex items-center justify-center gap-2" disabled>
                         <i data-lucide="plus-circle" class="w-5 h-5"></i>
                         添加新衣
@@ -118,15 +113,12 @@
             </nav>
         </header>
 
-        <!-- 内容区域 -->
         <main class="p-4 sm:p-6">
-            <!-- 认证/未登录 提示 -->
             <div id="not-signed-in" class="text-center py-16 hidden">
                 <i data-lucide="lock-keyhole" class="w-16 h-16 mx-auto text-blue-400 mb-4"></i>
                 <h2 class="text-xl font-bold text-slate-800 mb-2">请登录或注册以访问您的衣橱</h2>
                 <p class="text-slate-600 mb-6">使用电子邮件和密码登录或创建账户。</p>
                 
-                <!-- Email/Password Form -->
                 <form id="auth-form" class="max-w-xs mx-auto space-y-3 p-4 bg-white rounded-lg shadow-md border border-slate-200">
                     <div>
                         <input type="email" id="auth-email" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="电子邮箱 (Email)">
@@ -143,7 +135,6 @@
                 </form>
             </div>
             
-            <!-- 1. 我的衣橱 (My Closet) -->
             <div id="page-closet" class="page-content">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-semibold">衣橱总览</h2>
@@ -156,7 +147,6 @@
                     </select>
                 </div>
                 
-                <!-- 衣橱列表 (桌面端) -->
                 <div class="hidden sm:block overflow-x-auto rounded-lg border border-slate-200">
                     <table class="min-w-full divide-y divide-slate-200">
                         <thead class="bg-slate-50">
@@ -170,26 +160,21 @@
                             </tr>
                         </thead>
                         <tbody id="closet-table-body" class="bg-white divide-y divide-slate-200">
-                            <!-- JS动态插入 -->
                             <tr id="closet-empty-row"><td colspan="6" class="p-6 text-center text-slate-500">衣橱是空的，快去添加新衣服吧！</td></tr>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- 衣橱列表 (移动端) -->
                 <div id="closet-card-list" class="sm:hidden space-y-3">
-                    <!-- JS动态插入 -->
                     <div id="closet-empty-card" class="p-6 text-center text-slate-500 bg-white rounded-lg shadow-sm">衣橱是空的，快去添加新衣服吧！</div>
                 </div>
             </div>
 
-            <!-- 2. 记录穿搭 (Log Wear) -->
             <div id="page-log" class="page-content hidden">
                 <h2 class="text-xl font-semibold mb-4">记录今日穿搭 (Today's Outfit)</h2>
                 <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
                     <p class="text-slate-600 mb-4">请选择你今天穿了的衣服：</p>
                     <div id="log-wear-list" class="space-y-3 max-h-96 overflow-y-auto pr-2">
-                        <!-- JS动态插入 -->
                         <p id="log-empty-list" class="text-center text-slate-500 py-4">衣橱里没有衣服哦。</p>
                     </div>
                     <button id="submit-log-wear" class="mt-6 w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2">
@@ -198,8 +183,14 @@
                     </button>
                 </div>
             </div>
+            
+            <div id="page-history" class="page-content hidden">
+                <h2 class="text-xl font-semibold mb-4">我的穿搭历史</h2>
+                <div id="history-list" class="space-y-4">
+                    <p id="history-empty" class="p-6 text-center text-slate-500 bg-white rounded-lg shadow-sm">还没有穿搭记录哦。</p>
+                </div>
+            </div>
 
-            <!-- 3. 添加新衣 (Add New) -->
             <div id="page-add" class="page-content hidden">
                 <h2 class="text-xl font-semibold mb-4">添加新衣服</h2>
                 <form id="add-item-form" class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 space-y-4">
@@ -240,12 +231,10 @@
 
     </div>
 
-    <!-- 消息提示框 (Toast) -->
     <div id="toast" class="py-3 px-5 rounded-lg shadow-lg text-white font-semibold">
         <span id="toast-message">...</span>
     </div>
 
-    <!-- 确认删除模态框 (Modal) -->
     <div id="delete-modal" class="hidden">
         <div class="modal-backdrop"></div>
         <div class="modal-content w-full max-w-sm bg-white rounded-lg shadow-xl p-6">
@@ -264,17 +253,15 @@
     </div>
 
 
-    <!-- Firebase 脚本 -->
     <script type="module">
         // 导入Firebase模块
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { 
             getAuth, 
-            signInWithEmailAndPassword, // Email/Password Sign In
-            createUserWithEmailAndPassword, // Email/Password Sign Up
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
             signOut,
             onAuthStateChanged
-            // 移除了 GoogleAuthProvider 和 signInWithPopup
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { 
             getFirestore, 
@@ -290,10 +277,8 @@
 
         // --- 全局变量和Firebase设置 ---
         
-        // 开启调试日志
         setLogLevel('Debug');
 
-        // IMPORTANT: The app ID is used for the Firestore path: /artifacts/{appId}/users/{userId}/closet
         const appId = 'github-cpw-tracker'; 
         
         // --- VVVVVV YOUR FIREBASE CONFIG GOES HERE VVVVVV ---
@@ -313,7 +298,6 @@
         // --- ^^^^^^ YOUR FIREBASE CONFIG GOES HERE ^^^^^^ ---
 
 
-        // 确定使用哪个配置 (在 Canvas 环境下，会使用 Canvas 提供的配置)
         const firebaseConfig = (() => {
             if (typeof __firebase_config === 'string' && __firebase_config.trim() !== '') {
                 console.log("Using Canvas provided config.");
@@ -323,18 +307,22 @@
             return YOUR_FIREBASE_CONFIG;
         })();
 
-        // 移除了 initialAuthToken 相关的逻辑
-
-        // 初始化Firebase
+        // 初始化Firebase相关变量
         let app, auth, db;
         let userId = null;
         let isAuthReady = false;
         let userEmail = null;
         let closetRef = null;
         let localClosetCache = []; 
-        let currentDeleteItem = { id: null, name: null }; 
         let unsubscribeCloset = null; 
-        let isSignUpMode = false; // Tracks if the form is for Sign Up or Sign In
+        
+        // 【新增】穿搭历史相关变量
+        let wearLogsRef = null;
+        let localWearLogsCache = []; 
+        let unsubscribeWearLogs = null; 
+        
+        let currentDeleteItem = { id: null, name: null }; 
+        let isSignUpMode = false; 
 
         // DOM 元素
         const loadingOverlay = document.getElementById('loading-overlay');
@@ -342,14 +330,18 @@
         const authContainer = document.getElementById('auth-container');
         const notSignedInDiv = document.getElementById('not-signed-in');
         
+        // 【更新】Tabs 映射
         const tabs = {
             closet: document.getElementById('tab-closet'),
             log: document.getElementById('tab-log'),
+            history: document.getElementById('tab-history'), 
             add: document.getElementById('tab-add'),
         };
+        // 【更新】Pages 映射
         const pages = {
             closet: document.getElementById('page-closet'),
             log: document.getElementById('page-log'),
+            history: document.getElementById('page-history'), 
             add: document.getElementById('page-add'),
         };
 
@@ -366,6 +358,10 @@
         const logWearList = document.getElementById('log-wear-list');
         const logEmptyList = document.getElementById('log-empty-list');
         const submitLogWearBtn = document.getElementById('submit-log-wear');
+        
+        // 【新增】历史记录 DOM 元素
+        const historyList = document.getElementById('history-list');
+        const historyEmpty = document.getElementById('history-empty');
         
         const sortSelect = document.getElementById('sort-select');
         
@@ -384,7 +380,6 @@
          */
         async function initializeFirebase() {
             try {
-                // Check for placeholder key before initialization
                 if (firebaseConfig.apiKey === "YOUR_FALLBACK_API_KEY" && typeof __firebase_config === 'undefined') {
                     throw new Error("API Key Missing! 请替换 'YOUR_FALLBACK_API_KEY' 为您真实的 Firebase API Key.");
                 }
@@ -394,7 +389,6 @@
                 auth = getAuth(app);
                 console.log("Firebase a. (初始化成功)");
                 
-                // 1. 设置认证监听器
                 setupAuthListener();
                 
             } catch (error) {
@@ -409,7 +403,7 @@
          */
         function setupAuthListener() {
             onAuthStateChanged(auth, async (user) => {
-                isAuthReady = true; // 认证状态检查完毕
+                isAuthReady = true; 
                 
                 if (user) {
                     // --- 用户已登录 ---
@@ -417,12 +411,10 @@
                     userId = user.uid;
                     userEmail = user.email || 'N/A';
                     
-                    // 隐藏未登录提示，显示主内容
                     notSignedInDiv.classList.add('hidden');
                     switchTab('closet'); 
                     Object.values(tabs).forEach(tab => tab.disabled = false);
 
-                    // 更新UI, 显示用户Email和注销按钮
                     authContainer.innerHTML = `
                         <div class="flex items-center gap-3 text-xs text-slate-500">
                             <span class="text-slate-800 font-medium">${escapeHTML(userEmail)}</span>
@@ -440,9 +432,17 @@
                     const closetColPath = `/artifacts/${appId}/users/${userId}/closet`;
                     closetRef = collection(db, closetColPath);
                     console.log("Firestore 路径:", closetColPath);
+                    
+                    // 【新增】穿搭记录集合引用
+                    const wearLogsColPath = `/artifacts/${appId}/users/${userId}/wear_logs`;
+                    wearLogsRef = collection(db, wearLogsColPath);
+                    console.log("Wear Logs 路径:", wearLogsColPath);
 
                     // 启动衣橱的实时监听
                     attachClosetSnapshot();
+                    
+                    // 【新增】启动穿搭历史的实时监听
+                    attachWearLogsSnapshot();
                     
                 } else {
                     // --- 用户未登录 ---
@@ -450,32 +450,34 @@
                     
                     userId = null;
                     userEmail = null;
-                    if (unsubscribeCloset) unsubscribeCloset(); // 停止监听
-                    localClosetCache = []; // 清空缓存
+                    if (unsubscribeCloset) unsubscribeCloset(); 
+                    if (unsubscribeWearLogs) unsubscribeWearLogs(); // 【新增】停止监听
+                    localClosetCache = []; 
+                    localWearLogsCache = []; // 【新增】清空缓存
                     
-                    // 禁用所有功能标签
                     Object.values(tabs).forEach(tab => tab.disabled = true);
                     
-                    // 清空UI并显示未登录提示
                     renderCloset();
                     renderLogWearPage();
-                    loadingOverlay.classList.add('hidden'); // 隐藏加载中
-                    notSignedInDiv.classList.remove('hidden'); // 显示未登录提示
+                    renderWearHistoryPage(); // 【新增】清空历史记录页面
                     
-                    // 绑定 Email/Password 认证事件
+                    loadingOverlay.classList.add('hidden'); 
+                    notSignedInDiv.classList.remove('hidden'); 
+                    
                     authForm.addEventListener('submit', handleAuth);
                     toggleSignUpBtn.addEventListener('click', handleToggleAuthMode);
-                    handleToggleAuthMode(false); // Initialize UI to Sign In mode
+                    handleToggleAuthMode(false); 
                 }
                 lucide.createIcons();
             });
         }
         
         /**
-         * 3. 登录/注册/注销功能
+         * 3. 登录/注册/注销功能 (未修改)
          */
         
-        // Toggles the authentication form between Sign In and Sign Up mode
+        // ... (handleToggleAuthMode, handleAuth, handleSignOut 保持不变) ...
+        
         function handleToggleAuthMode(toggle = true) {
             if (toggle) {
                 isSignUpMode = !isSignUpMode;
@@ -507,15 +509,12 @@
 
             try {
                 if (isSignUpMode) {
-                    // Sign Up
                     await createUserWithEmailAndPassword(auth, email, password);
                     showToast("注册成功！您已自动登录。", 'success');
                 } else {
-                    // Sign In
                     await signInWithEmailAndPassword(auth, email, password);
                     showToast("登录成功！欢迎回来。", 'success');
                 }
-                // onAuthStateChanged will handle the rest
             } catch (error) {
                 console.error(`${actionText} 失败:`, error);
                 loadingOverlay.classList.add('hidden');
@@ -539,7 +538,6 @@
             try {
                 await signOut(auth);
                 showToast("您已成功注销。", 'info');
-                // onAuthStateChanged 会处理注销后的逻辑
             } catch (error) {
                 console.error("注销失败:", error);
                 showToast(`注销失败: ${error.message}`, 'error');
@@ -547,7 +545,7 @@
         }
 
         /**
-         * 4. 附加衣橱快照监听器
+         * 4. 附加衣橱快照监听器 (未修改)
          */
         function attachClosetSnapshot() {
             if (!isAuthReady || !closetRef) {
@@ -556,12 +554,12 @@
             }
 
             if (unsubscribeCloset) {
-                unsubscribeCloset(); // 取消之前的监听
+                unsubscribeCloset(); 
             }
 
-            console.log("Firestore c. (正在附加快照监听器)");
+            console.log("Firestore c. (正在附加快照监听器: Closet)");
             unsubscribeCloset = onSnapshot(closetRef, (snapshot) => {
-                console.log("Firestore d. (收到快照更新)");
+                console.log("Firestore d. (收到快照更新: Closet)");
                 localClosetCache = snapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data()
@@ -570,7 +568,6 @@
                 renderCloset();
                 renderLogWearPage();
 
-                // 隐藏加载遮罩
                 if (!loadingOverlay.classList.contains('hidden')) {
                      setTimeout(() => {
                         loadingOverlay.classList.add('hidden');
@@ -578,21 +575,48 @@
                 }
                
             }, (error) => {
-                console.error("Firestore 监听失败:", error);
+                console.error("Firestore Closet 监听失败:", error);
                 loadingText.textContent = "加载衣橱失败! " + error.message;
+            });
+        }
+        
+        /**
+         * 4.1 【新增】 附加穿搭历史快照监听器
+         */
+        function attachWearLogsSnapshot() {
+            if (!isAuthReady || !wearLogsRef) return;
+            if (unsubscribeWearLogs) unsubscribeWearLogs(); 
+
+            console.log("Firestore e. (正在附加快照监听器: Wear Logs)");
+            unsubscribeWearLogs = onSnapshot(wearLogsRef, (snapshot) => {
+                console.log("Firestore f. (收到快照更新: Wear Logs)");
+                localWearLogsCache = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    // 将 Firestore Timestamp 转换为 JS Date 对象
+                    date: doc.data().date ? doc.data().date.toDate() : null 
+                }));
+                
+                // 按日期降序排序 (最新在最前面)
+                localWearLogsCache.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+                renderWearHistoryPage(); // 渲染历史页面
+
+            }, (error) => {
+                console.error("Firestore Wear Logs 监听失败:", error);
             });
         }
 
         /**
-         * 5. 渲染衣橱 (排序 + 显示)
+         * 5. 渲染衣橱 (排序 + 显示) (未修改)
          */
         function renderCloset() {
-            // 清空旧内容
+            // ... (renderCloset 函数保持不变) ...
+            
             closetTableBody.innerHTML = '';
             closetCardList.innerHTML = '';
 
             if (localClosetCache.length === 0) {
-                // Ensure only one of each placeholder is present
                 if (!closetTableBody.querySelector('#closet-empty-row')) {
                     closetTableBody.appendChild(closetEmptyRow);
                 }
@@ -602,10 +626,8 @@
                 return;
             }
 
-            // A. 排序
             const sortedCloset = sortCloset(localClosetCache, sortSelect.value);
             
-            // C. 填充
             sortedCloset.forEach(item => {
                 const cpw = calculateCPW(item.price, item.timesWorn);
                 const cpwColor = getCPWColor(cpw);
@@ -673,7 +695,7 @@
         }
 
         /**
-         * 6. 渲染“记录穿搭”页面 (Render Log Wear Page)
+         * 6. 渲染“记录穿搭”页面 (Render Log Wear Page) (未修改)
          */
         function renderLogWearPage() {
             if (localClosetCache.length === 0) {
@@ -698,9 +720,65 @@
                 logWearList.appendChild(li);
             });
         }
+        
+        /**
+         * 6.1 【新增】 渲染穿搭历史页面 (Render Wear History Page)
+         */
+        function renderWearHistoryPage() {
+            historyList.innerHTML = ''; 
+
+            if (localWearLogsCache.length === 0) {
+                // 如果历史记录为空，确保显示空提示
+                if (!historyList.querySelector('#history-empty')) {
+                    historyList.appendChild(historyEmpty);
+                }
+                return;
+            }
+            
+            // 辅助函数：根据 ID 查找衣物名称
+            const getItemName = (id) => {
+                const item = localClosetCache.find(i => i.id === id);
+                return item ? escapeHTML(item.name) : '已删除的衣物';
+            };
+            
+            localWearLogsCache.forEach(log => {
+                // 格式化日期
+                const dateStr = log.date.toLocaleDateString('zh-CN', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+                
+                // 渲染衣物列表
+                const itemNames = log.itemIds.map(id => `
+                    <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
+                        ${getItemName(id)}
+                    </span>
+                `).join(' ');
+
+                const logDiv = document.createElement('div');
+                logDiv.className = "bg-white p-4 rounded-lg shadow-md border border-slate-200";
+                logDiv.innerHTML = `
+                    <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
+                        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="calendar" class="w-5 h-5 text-blue-500"></i>
+                            ${dateStr}
+                        </h3>
+                        <span class="text-sm font-semibold text-slate-600">${log.itemIds.length} 件</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        ${itemNames}
+                    </div>
+                `;
+                historyList.appendChild(logDiv);
+            });
+            
+            lucide.createIcons();
+        }
+
 
         /**
-         * 7. 处理添加新衣
+         * 7. 处理添加新衣 (未修改)
          */
         async function handleAddItem(e) {
             e.preventDefault();
@@ -738,10 +816,10 @@
         }
 
         /**
-         * 8. 处理记录穿搭
+         * 8. 处理记录穿搭 (更新: 增加写入 wear_logs 逻辑)
          */
         async function handleLogWear() {
-            if (!isAuthReady || !closetRef || !userId) {
+            if (!isAuthReady || !closetRef || !wearLogsRef || !userId) {
                  showToast("请先登录才能记录穿搭！", 'error');
                  return;
             }
@@ -756,8 +834,11 @@
             submitLogWearBtn.innerHTML = '<div class="loader w-5 h-5 rounded-full border-2 border-white/50 border-t-white animate-spin"></div> 正在记录...';
             
             const updates = [];
+            const loggedItemIds = []; // 用于记录本次穿搭的 ID 列表
+            
             checkboxes.forEach(cb => {
                 const docId = cb.dataset.id;
+                loggedItemIds.push(docId); // 收集 ID
                 const itemRef = doc(db, closetRef.path, docId);
                 updates.push(
                     updateDoc(itemRef, {
@@ -767,10 +848,21 @@
             });
 
             try {
+                // 1. 原子性地更新 timesWorn
                 await Promise.all(updates);
+                
+                // 2. 【新增】 记录穿搭日志到 wear_logs 集合
+                const wearLogEntry = {
+                    date: new Date(), 
+                    itemIds: loggedItemIds
+                };
+                await addDoc(wearLogsRef, wearLogEntry); 
+                
+                // 3. 提示和清理
                 showToast(`成功记录 ${updates.length} 件衣服！`, 'success');
                 checkboxes.forEach(cb => cb.checked = false);
                 switchTab('closet');
+
             } catch (error) {
                 console.error("记录穿搭失败:", error);
                 showToast(`记录失败: ${error.message}`, 'error');
@@ -782,7 +874,7 @@
         }
 
         /**
-         * 9. 绑定删除按钮监听
+         * 9. 绑定删除按钮监听 (未修改)
          */
         function attachDeleteListeners() {
             document.querySelectorAll('.delete-btn').forEach(button => {
@@ -798,7 +890,7 @@
         }
         
         /**
-         * 10. 处理删除物品
+         * 10. 处理删除物品 (未修改)
          */
         async function handleDeleteItem() {
             if (!isAuthReady || !closetRef || !currentDeleteItem.id) return;
@@ -870,7 +962,7 @@
 
         function showToast(message, type = 'info') {
             toastMessage.textContent = message;
-            toast.className = 'py-3 px-5 rounded-lg shadow-lg text-white font-semibold'; // 重置
+            toast.className = 'py-3 px-5 rounded-lg shadow-lg text-white font-semibold'; 
             
             if (type === 'success') {
                 toast.classList.add('bg-green-500');
@@ -906,7 +998,6 @@
         // 标签页切换
         Object.keys(tabs).forEach(key => {
             tabs[key].addEventListener('click', () => {
-                // 只有在登录状态下才能切换
                 if (userId) {
                     switchTab(key);
                 } else {
@@ -932,10 +1023,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             initializeFirebase();
             lucide.createIcons();
-            // onAuthStateChanged handles the initial tab state
         });
 
     </script>
 </body>
 </html>
-
