@@ -152,6 +152,7 @@
                     <table class="min-w-full divide-y divide-slate-200">
                         <thead class="bg-slate-50">
                             <tr>
+                                <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">品牌</th>
                                 <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">名称</th>
                                 <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">类型</th>
                                 <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">价格</th>
@@ -196,8 +197,14 @@
                 <h2 class="text-xl font-semibold mb-4">添加新衣服</h2>
                 <form id="add-item-form" class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 space-y-4">
                     <div>
+                        <label for="brand-select" class="block text-sm font-medium text-slate-700">品牌 (Brand)</label>
+                        <select id="brand-select" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                        <option value="">-- 请选择品牌 --</option>
+                        </select>
+                    </div>
+                    <div>
                         <label for="item-name" class="block text-sm font-medium text-slate-700">衣服名称 (Name)</label>
-                        <input type="text" id="item-name" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="例如: Brandy Melville 灰色卫衣">
+                        <input type="text" id="item-name" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="例如: 灰色卫衣">
                     </div>
                     <div>
                         <label for="item-type" class="block text-sm font-medium text-slate-700">类型 (Type)</label>
@@ -287,10 +294,7 @@
         const appId = 'github-cpw-tracker'; 
         
         // --- VVVVVV YOUR FIREBASE CONFIG GOES HERE VVVVVV ---
-        //
-        // You MUST replace the placeholder values below with the actual configuration 
-        // you copied from the Firebase Console.
-        //
+        
         const YOUR_FIREBASE_CONFIG = {
             apiKey: "AIzaSyBmMDiNLEwJ7kPLgsbNaTrwCst_0vAa-jQ", // <-- REPLACE THIS
             authDomain: "sj-s-closet.firebaseapp.com", // <-- REPLACE THIS
@@ -299,9 +303,8 @@
             messagingSenderId: "993270988589",
             appId: "1:993270988589:web:46499ea5f6e32531831da4" // <-- REPLACE THIS
         };
-        //
-        // --- ^^^^^^ YOUR FIREBASE CONFIG GOES HERE ^^^^^^ ---
 
+        // --- ^^^^^^ YOUR FIREBASE CONFIG GOES HERE ^^^^^^ ---
 
         const firebaseConfig = (() => {
             if (typeof __firebase_config === 'string' && __firebase_config.trim() !== '') {
@@ -381,6 +384,95 @@
         const deleteItemName = document.getElementById('delete-item-name');
         const cancelDeleteBtn = document.getElementById('cancel-delete');
         const confirmDeleteBtn = document.getElementById('confirm-delete');
+
+        // --- Brand options (fixed set) ---
+        const BRANDS = [
+        "Adidas",
+        "Aerepostale",
+        "Aritzia",
+        "Brandy Melville",
+        "Cotton On",
+        "Hollister",
+        "Hongdae",
+        "Lululemon",
+        "MLB",
+        "Olive des Olive",
+        "Sistina",
+        "Trader Joes",
+        ];
+
+        /**
+        * Populate the brand <select> with options from BRANDS.
+        */
+        function renderBrandSelect() {
+        const sel = document.getElementById("brand-select");
+        if (!sel) return;
+
+        sel.innerHTML = '<option value="">-- 请选择品牌 --</option>';
+
+        BRANDS.forEach(b => {
+        const opt = document.createElement("option");
+        opt.value = b;
+        opt.textContent = b;
+        sel.appendChild(opt);
+        });
+        }
+function startInlineEdit(e) {
+  const span = e.currentTarget;
+  const id = span.getAttribute('data-id');
+  const field = span.getAttribute('data-field'); // "brand" 或 "name"
+  const oldValue = span.textContent === '—' ? '' : span.textContent;
+
+  // 建立输入框
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = oldValue;
+  input.className = 'inline-edit border border-slate-300 rounded px-1 text-sm';
+  input.style.minWidth = Math.max(60, span.offsetWidth) + 'px';
+
+  // 替换节点
+  span.replaceWith(input);
+  input.focus();
+  input.select();
+
+  // 保存函数
+  const save = () => {
+    const newValue = input.value.trim();
+    if (newValue !== oldValue) {
+      // 更新数据并持久化
+      saveItemField(id, field, newValue);
+    }
+    // 用新的 span 还原
+    const newSpan = document.createElement('span');
+    newSpan.className = 'editable';
+    newSpan.setAttribute('data-id', id);
+    newSpan.setAttribute('data-field', field);
+    newSpan.title = field === 'brand' ? '双击编辑品牌' : '双击编辑名称';
+    newSpan.textContent = newValue || '—';
+    newSpan.addEventListener('dblclick', startInlineEdit);
+    input.replaceWith(newSpan);
+  };
+
+  // 取消函数（恢复旧值）
+  const cancel = () => {
+    const newSpan = document.createElement('span');
+    newSpan.className = 'editable';
+    newSpan.setAttribute('data-id', id);
+    newSpan.setAttribute('data-field', field);
+    newSpan.title = field === 'brand' ? '双击编辑品牌' : '双击编辑名称';
+    newSpan.textContent = oldValue || '—';
+    newSpan.addEventListener('dblclick', startInlineEdit);
+    input.replaceWith(newSpan);
+  };
+
+  // 事件：Enter 保存；Esc 取消；blur 保存
+  input.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') save();
+    else if (ev.key === 'Escape') cancel();
+  });
+  input.addEventListener('blur', save);
+}
+
 
         // --- 核心功能 ---
 
@@ -482,7 +574,7 @@
         }
         
         /**
-         * 3. 登录/注册/注销功能 (未修改)
+         * 3. 登录/注册/注销功能
          */
         
         function handleToggleAuthMode(toggle = true) {
@@ -552,7 +644,7 @@
         }
 
         /**
-         * 4. 附加衣橱快照监听器 (未修改)
+         * 4. 附加衣橱快照监听器
          */
         function attachClosetSnapshot() {
             if (!isAuthReady || !closetRef) {
@@ -641,8 +733,13 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50";
                 tr.innerHTML = `
+                    <td class="py-4 px-4 text-sm text-slate-900">
+                    <span class="editable" data-id="${item.id}" data-field="brand" title="双击编辑品牌">${escapeHTML(item.brand || "—")}</span>
+                    </td>
                     <td class="py-4 px-4 whitespace-nowrap">
-                        <div class="text-sm font-semibold text-slate-900">${escapeHTML(item.name)}</div>
+                        <div class="text-sm font-semibold text-slate-900">
+                        <span class="editable" data-id="${item.id}" data-field="name" title="双击编辑名称">${escapeHTML(item.name)}</span>
+                        </div>
                     </td>
                     <td class="py-4 px-4 whitespace-nowrap">
                         <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
@@ -655,6 +752,7 @@
                         $${cpw}
                     </td>
                     <td class="py-4 px-4 whitespace-nowrap text-sm font-medium">
+
                         <button class="delete-btn text-red-600 hover:text-red-900" data-id="${item.id}" data-name="${escapeHTML(item.name)}">
                             <i data-lucide="trash-2" class="w-5 h-5"></i>
                         </button>
@@ -668,7 +766,11 @@
                 card.innerHTML = `
                     <div class="flex justify-between items-start">
                         <div>
-                            <div class="text-base font-semibold text-slate-900">${escapeHTML(item.name)}</div>
+                            <div class="text-sm text-slate-600">
+                                <span class="editable" data-id="${item.id}" data-field="brand" title="双击编辑品牌">${escapeHTML(item.brand || "—")}</span>
+                            </div>
+                            <div class="text-base font-semibold text-slate-900"><span class="editable" data-id="${item.id}" data-field="name" title="双击编辑名称">${escapeHTML(item.name)}</span>
+                            </div>
                             <span class="mt-1 px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                                 ${escapeHTML(item.type)}
                             </span>
@@ -696,6 +798,7 @@
             
             lucide.createIcons();
             attachDeleteListeners();
+            attachEditNameListeners();
         }
 
         /**
@@ -712,21 +815,28 @@
             logWearList.innerHTML = ''; 
             submitLogWearBtn.disabled = false;
             
-            const sortedCloset = sortCloset(localClosetCache, 'name_asc');
+            const sortedCloset = sortCloset(localClosetCache, 'brand_asc_cpw_desc');
 
             sortedCloset.forEach(item => {
                 const li = document.createElement('label');
                 li.className = "flex items-center space-x-3 bg-slate-50 p-3 rounded-lg hover:bg-slate-100 cursor-pointer";
                 li.innerHTML = `
-                    <input type="checkbox" class="log-wear-checkbox h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" data-id="${item.id}">
-                    <span class="text-sm font-medium text-slate-800">${escapeHTML(item.name)}</span>
+                    <input type="checkbox" 
+                        class="log-wear-checkbox h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        data-id="${item.id}">
+                    <span class="text-sm font-semibold text-slate-900">
+                        <span class="editable" data-id="${item.id}" data-field="brand" title="双击编辑品牌">${escapeHTML(item.brand || "—")}</span>
+                        · ${escapeHTML(item.type)} ·
+                        <span class="editable" data-id="${item.id}" data-field="name" title="双击编辑名称">${escapeHTML(item.name)}</span>
+                    </span>
                 `;
                 logWearList.appendChild(li);
             });
+            lucide.createIcons();
         }
         
         /**
-         * 6.1 渲染穿搭历史页面 (Render Wear History Page) (未修改)
+         * 6.1 渲染穿搭历史页面 (Render Wear History Page)
          */
         function renderWearHistoryPage() {
             historyList.innerHTML = ''; 
@@ -798,17 +908,19 @@
                  return;
             }
 
+            const brand = document.getElementById("brand-select").value;
             const name = document.getElementById('item-name').value.trim();
             const type = document.getElementById('item-type').value;
             const price = parseFloat(document.getElementById('item-price').value);
             const timesWorn = parseInt(document.getElementById('item-times-worn').value);
 
-            if (!name || !type || isNaN(price) || isNaN(timesWorn)) {
+            if (!brand || !name || !type || isNaN(price) || isNaN(timesWorn)) {
                 showToast("请填写所有字段！", 'error');
                 return;
             }
 
             const newItem = {
+                brand,
                 name,
                 type,
                 price,
@@ -935,6 +1047,54 @@
                     deleteModal.classList.remove('hidden');
                 });
             });
+        }
+
+        function attachEditNameListeners() {
+            document.querySelectorAll('.edit-name-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const { id, name } = e.currentTarget.dataset;
+            handleEditItemName(id, name);
+            });
+            });
+        }
+
+        /**
+        * Rename only: update the "name" field in Firestore
+        */
+        async function handleEditItemName(itemId, oldName) {
+        if (!isAuthReady || !closetRef || !userId) {
+        showToast("请先登录才能编辑！", 'error');
+        return;
+        }
+
+        // Simple UI: use prompt() first. You can swap to a modal later.
+        const newName = (prompt("输入新的衣物名称：", oldName) || "").trim();
+        // Basic validation
+        if (!newName) {
+        showToast("名称不能为空。", 'warning');
+        return;
+        }
+        if (newName === oldName) {
+        showToast("名称未改变。", 'info');
+        return;
+        }
+        // Optional: prevent duplicate names (case-insensitive)
+        //const exists = (localClosetCache || []).some(i =>
+        //i.id !== itemId && i.name && i.name.toLowerCase() === newName.toLowerCase()
+        //);
+        //if (exists) {
+        //showToast("已存在同名衣物，请换一个名称。", 'error');
+        //return;
+        //}
+
+        try {
+            const itemRef = doc(db, closetRef.path, itemId);
+            await updateDoc(itemRef, { name: newName });
+            showToast("名称已更新。", 'success');
+        } catch (err) {
+            console.error("重命名失败：", err);
+            showToast("重命名失败：" + err.message, 'error');
+        }
         }
         
         /**
@@ -1112,8 +1272,14 @@
                     case 'times_asc': return a.timesWorn - b.timesWorn; 
                     case 'times_desc': return b.timesWorn - a.timesWorn; 
                     case 'name_asc': return a.name.localeCompare(b.name, 'zh-Hans-CN'); 
+                    case 'brand_asc_cpw_desc': {
+                        const brandA = a.brand.trim();
+                        const brandB = b.brand.trim();
+
+                        const byBrand = brandA.localeCompare(brandB, 'zh-Hans-CN');
+                        if (byBrand !== 0) return byBrand;}
                     default: return cpwB - cpwA;
-                }
+                    }
             });
         }
 
@@ -1149,6 +1315,87 @@
             });
         }
 
+        // 允许更新的字段白名单
+const EDITABLE_FIELDS = new Set(['brand', 'name']);
+
+// 保存字段到 Firestore
+async function saveItemField(itemId, field, newValue) {
+  if (!EDITABLE_FIELDS.has(field)) {
+    showToast('不支持的字段：' + field, 'error');
+    return;
+  }
+  if (!isAuthReady || !closetRef || !userId) {
+    showToast("请先登录才能编辑！", 'error');
+    return;
+  }
+  const itemRef = doc(db, closetRef.path, itemId);
+  // 去掉首尾空格
+  const value = (newValue || '').trim();
+  if (!value) {
+    showToast('内容不能为空', 'warning');
+    return;
+  }
+  await updateDoc(itemRef, { [field]: value });
+  showToast((field === 'brand' ? '品牌' : '名称') + '已更新。', 'success');
+}
+
+// 开启双击就地编辑（事件委托，全局一次即可）
+function enableInlineEditing() {
+  // 在整个主容器里代理（也可以针对 page-closet/page-log 容器）
+  document.addEventListener('dblclick', (e) => {
+    const el = e.target;
+    if (!el.classList || !el.classList.contains('editable')) return;
+
+    const itemId = el.dataset.id;
+    const field = el.dataset.field;
+    const oldText = el.textContent;
+
+    // 创建输入框替换
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = oldText;
+    input.className = 'border border-slate-300 rounded px-2 py-1 text-sm w-auto max-w-[240px]';
+    // 防止父级 label 勾选 checkbox
+    input.addEventListener('click', ev => ev.stopPropagation());
+
+    // 提交函数
+    const commit = async () => {
+      const newText = input.value;
+      // 还原显示
+      el.textContent = newText;
+      el.style.display = '';
+      input.remove();
+      if (newText !== oldText) {
+        try {
+          await saveItemField(itemId, field, newText);
+        } catch (err) {
+          console.error(err);
+          showToast('保存失败：' + err.message, 'error');
+          // 回退旧文本
+          el.textContent = oldText;
+        }
+      }
+    };
+
+    // 取消函数（Esc）
+    const cancel = () => {
+      el.style.display = '';
+      input.remove();
+    };
+
+    // 放入 DOM
+    el.style.display = 'none';
+    el.parentNode.insertBefore(input, el);
+    input.focus();
+    input.select();
+
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') commit();
+      else if (ev.key === 'Escape') cancel();
+    });
+    input.addEventListener('blur', commit);
+  });
+}
 
         // --- 事件监听器绑定 ---
         
@@ -1181,10 +1428,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             initializeFirebase();
             lucide.createIcons();
+            renderBrandSelect();
+            enableInlineEditing(); // ← 新增：启用双击就地编辑
         });
 
     </script>
 </body>
 </html>
-
 
