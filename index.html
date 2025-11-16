@@ -138,14 +138,16 @@
             
             <div id="page-closet" class="page-content">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold">衣橱总览</h2>
-                    <select id="sort-select" class="rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                    <h2 class="text-xl font-semibold text-center w-full mx-auto">衣橱总览</h2>
+                    <!--<select id="sort-select" class="rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
                         <option value="cpw_desc">按CPW降序 (最贵)</option>
                         <option value="cpw_asc">按CPW升序 (最值)</option>
+                        <option value="type_asc">按类型升序</option>
+                        <option value="type_desc">按类型降序</option>
                         <option value="times_asc">按穿下次数升序</option>
                         <option value="times_desc">按穿下次数降序</option>
                         <option value="name_asc">按名称升序 (A-Z)</option>
-                    </select>
+                    </select>-->
                 </div>
                 
                 <div class="hidden sm:block overflow-x-auto rounded-lg border border-slate-200">
@@ -293,18 +295,14 @@
 
         const appId = 'github-cpw-tracker'; 
         
-        // --- VVVVVV YOUR FIREBASE CONFIG GOES HERE VVVVVV ---
-        
         const YOUR_FIREBASE_CONFIG = {
-            apiKey: "AIzaSyBmMDiNLEwJ7kPLgsbNaTrwCst_0vAa-jQ", // <-- REPLACE THIS
-            authDomain: "sj-s-closet.firebaseapp.com", // <-- REPLACE THIS
-            projectId: "sj-s-closet", // <-- REPLACE THIS
+            apiKey: "AIzaSyBmMDiNLEwJ7kPLgsbNaTrwCst_0vAa-jQ", 
+            authDomain: "sj-s-closet.firebaseapp.com", 
+            projectId: "sj-s-closet", 
             storageBucket: "sj-s-closet.firebasestorage.app",
             messagingSenderId: "993270988589",
-            appId: "1:993270988589:web:46499ea5f6e32531831da4" // <-- REPLACE THIS
+            appId: "1:993270988589:web:46499ea5f6e32531831da4" 
         };
-
-        // --- ^^^^^^ YOUR FIREBASE CONFIG GOES HERE ^^^^^^ ---
 
         const firebaseConfig = (() => {
             if (typeof __firebase_config === 'string' && __firebase_config.trim() !== '') {
@@ -375,7 +373,7 @@
         const historyList = document.getElementById('history-list');
         const historyEmpty = document.getElementById('history-empty');
         
-        const sortSelect = document.getElementById('sort-select');
+        //const sortSelect = document.getElementById('sort-select');
         
         const toast = document.getElementById('toast');
         const toastMessage = document.getElementById('toast-message');
@@ -417,61 +415,62 @@
         sel.appendChild(opt);
         });
         }
-function startInlineEdit(e) {
-  const span = e.currentTarget;
-  const id = span.getAttribute('data-id');
-  const field = span.getAttribute('data-field'); // "brand" 或 "name"
-  const oldValue = span.textContent === '—' ? '' : span.textContent;
 
-  // 建立输入框
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.value = oldValue;
-  input.className = 'inline-edit border border-slate-300 rounded px-1 text-sm';
-  input.style.minWidth = Math.max(60, span.offsetWidth) + 'px';
+        function startInlineEdit(e) {
+        const span = e.currentTarget;
+        const id = span.getAttribute('data-id');
+        const field = span.getAttribute('data-field'); // "brand" 或 "name"
+        const oldValue = span.textContent === '—' ? '' : span.textContent;
 
-  // 替换节点
-  span.replaceWith(input);
-  input.focus();
-  input.select();
+        // 建立输入框
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = oldValue;
+        input.className = 'inline-edit border border-slate-300 rounded px-1 text-sm';
+        input.style.minWidth = Math.max(60, span.offsetWidth) + 'px';
 
-  // 保存函数
-  const save = () => {
-    const newValue = input.value.trim();
-    if (newValue !== oldValue) {
-      // 更新数据并持久化
-      saveItemField(id, field, newValue);
-    }
-    // 用新的 span 还原
-    const newSpan = document.createElement('span');
-    newSpan.className = 'editable';
-    newSpan.setAttribute('data-id', id);
-    newSpan.setAttribute('data-field', field);
-    newSpan.title = field === 'brand' ? '双击编辑品牌' : '双击编辑名称';
-    newSpan.textContent = newValue || '—';
-    newSpan.addEventListener('dblclick', startInlineEdit);
-    input.replaceWith(newSpan);
-  };
+        // 替换节点
+        span.replaceWith(input);
+        input.focus();
+        input.select();
 
-  // 取消函数（恢复旧值）
-  const cancel = () => {
-    const newSpan = document.createElement('span');
-    newSpan.className = 'editable';
-    newSpan.setAttribute('data-id', id);
-    newSpan.setAttribute('data-field', field);
-    newSpan.title = field === 'brand' ? '双击编辑品牌' : '双击编辑名称';
-    newSpan.textContent = oldValue || '—';
-    newSpan.addEventListener('dblclick', startInlineEdit);
-    input.replaceWith(newSpan);
-  };
+        // 保存函数
+        const save = () => {
+            const newValue = input.value.trim();
+            if (newValue !== oldValue) {
+            // 更新数据并持久化
+            saveItemField(id, field, newValue);
+            }
+            // 用新的 span 还原
+            const newSpan = document.createElement('span');
+            newSpan.className = 'editable';
+            newSpan.setAttribute('data-id', id);
+            newSpan.setAttribute('data-field', field);
+            newSpan.title = field === 'brand' ? '双击编辑品牌' : '双击编辑名称';
+            newSpan.textContent = newValue || '—';
+            newSpan.addEventListener('dblclick', startInlineEdit);
+            input.replaceWith(newSpan);
+        };
 
-  // 事件：Enter 保存；Esc 取消；blur 保存
-  input.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Enter') save();
-    else if (ev.key === 'Escape') cancel();
-  });
-  input.addEventListener('blur', save);
-}
+        // 取消函数（恢复旧值）
+        const cancel = () => {
+            const newSpan = document.createElement('span');
+            newSpan.className = 'editable';
+            newSpan.setAttribute('data-id', id);
+            newSpan.setAttribute('data-field', field);
+            newSpan.title = field === 'brand' ? '双击编辑品牌' : '双击编辑名称';
+            newSpan.textContent = oldValue || '—';
+            newSpan.addEventListener('dblclick', startInlineEdit);
+            input.replaceWith(newSpan);
+        };
+
+        // 事件：Enter 保存；Esc 取消；blur 保存
+        input.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter') save();
+            else if (ev.key === 'Escape') cancel();
+        });
+        input.addEventListener('blur', save);
+        }
 
 
         // --- 核心功能 ---
@@ -723,7 +722,8 @@ function startInlineEdit(e) {
                 return;
             }
 
-            const sortedCloset = sortCloset(localClosetCache, sortSelect.value);
+            //const sortedCloset = sortCloset(localClosetCache, sortSelect.value);
+            const sortedCloset = sortCloset(localClosetCache);
             
             sortedCloset.forEach(item => {
                 const cpw = calculateCPW(item.price, item.timesWorn);
@@ -736,16 +736,19 @@ function startInlineEdit(e) {
                     <td class="py-4 px-4 text-sm text-slate-900">
                     <span class="editable" data-id="${item.id}" data-field="brand" title="双击编辑品牌">${escapeHTML(item.brand || "—")}</span>
                     </td>
-                    <td class="py-4 px-4 whitespace-nowrap">
-                        <div class="text-sm font-semibold text-slate-900">
-                        <span class="editable" data-id="${item.id}" data-field="name" title="双击编辑名称">${escapeHTML(item.name)}</span>
-                        </div>
-                    </td>
+                    
                     <td class="py-4 px-4 whitespace-nowrap">
                         <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                             ${escapeHTML(item.type)}
                         </span>
                     </td>
+                    
+                    <td class="py-4 px-4 whitespace-nowrap">
+                        <div class="text-sm font-semibold text-slate-900">
+                        <span class="editable" data-id="${item.id}" data-field="name" title="双击编辑名称">${escapeHTML(item.name)}</span>
+                        </div>
+                    </td>
+
                     <td class="py-4 px-4 whitespace-nowrap text-sm text-slate-600">$${item.price.toFixed(2)}</td>
                     <td class="py-4 px-4 whitespace-nowrap text-sm text-slate-600">${item.timesWorn} 次</td>
                     <td class="py-4 px-4 whitespace-nowrap text-sm font-bold ${cpwColor}">
@@ -815,7 +818,8 @@ function startInlineEdit(e) {
             logWearList.innerHTML = ''; 
             submitLogWearBtn.disabled = false;
             
-            const sortedCloset = sortCloset(localClosetCache, 'brand_asc_cpw_desc');
+            //const sortedCloset = sortCloset(localClosetCache, 'brand_asc_cpw_desc');
+            const sortedCloset = sortCloset(localClosetCache);
 
             sortedCloset.forEach(item => {
                 const li = document.createElement('label');
@@ -832,6 +836,7 @@ function startInlineEdit(e) {
                 `;
                 logWearList.appendChild(li);
             });
+
             lucide.createIcons();
         }
         
@@ -1262,24 +1267,47 @@ function startInlineEdit(e) {
         }
 
         function sortCloset(closet, sortBy) {
+            //closet：衣服数组（就是 localClosetCache）
+            //sortBy：一个字符串，告诉它用什么排序方式
             return closet.slice().sort((a, b) => {
+                //1)Brand升序
+                const brandA = (a.brand||'').trim();//历史遗留问题-如果用户没有写牌子，就给'',如果用户在牌子前后加了空格，就去掉空格
+                const brandB = (b.brand||'').trim();
+                const byBrand = brandA.localeCompare(brandB,'zh-Hans-CN');//按简体中文（中国地区）的方式进行比较排序
+                if (byBrand !== 0) {
+                    return byBrand;
+                }
+
+                // 2) Type 升序
+                const typeA = (a.type || '').trim();
+                const typeB = (b.type || '').trim();
+                const byType = typeA.localeCompare(typeB, 'zh-Hans-CN');
+                if (byType !== 0) {
+                    return byType;
+                }
+
+                // 3) CPW 降序（越贵排越前）
                 const cpwA = parseFloat(calculateCPW(a.price, a.timesWorn));
                 const cpwB = parseFloat(calculateCPW(b.price, b.timesWorn));
+                return cpwB - cpwA;
 
-                switch (sortBy) {
-                    case 'cpw_desc': return cpwB - cpwA; 
-                    case 'cpw_asc': return cpwA - cpwB; 
-                    case 'times_asc': return a.timesWorn - b.timesWorn; 
-                    case 'times_desc': return b.timesWorn - a.timesWorn; 
-                    case 'name_asc': return a.name.localeCompare(b.name, 'zh-Hans-CN'); 
-                    case 'brand_asc_cpw_desc': {
-                        const brandA = a.brand.trim();
-                        const brandB = b.brand.trim();
+                //switch (sortBy) {//排序的关键函数
+                    //case 'cpw_desc': return cpwB - cpwA; 
+                    //case 'cpw_asc': return cpwA - cpwB; 
+                    //case 'times_asc': return a.timesWorn - b.timesWorn; 
+                    //case 'times_desc': return b.timesWorn - a.timesWorn; 
+                    //case 'name_asc': return a.name.localeCompare(b.name, 'zh-Hans-CN'); 
+                    //case 'brand_asc_cpw_desc': {
+                        //const brandA = a.brand.trim();
+                        //const brandB = b.brand.trim();
 
-                        const byBrand = brandA.localeCompare(brandB, 'zh-Hans-CN');
-                        if (byBrand !== 0) return byBrand;}
-                    default: return cpwB - cpwA;
-                    }
+                        //const byBrand = brandA.localeCompare(brandB, 'zh-Hans-CN');
+                        //if (byBrand !== 0) return byBrand;}
+                    //case 'type_asc': return a.type.localeCompare(b.type, 'zh-Hans-CN');
+                    //case 'type_desc':return b.type.localeCompare(a.type, 'zh-Hans-CN');
+                    //default: return cpwB - cpwA;
+                    //}
+
             });
         }
 
@@ -1417,7 +1445,7 @@ function enableInlineEditing() {
         submitLogWearBtn.addEventListener('click', handleLogWear);
 
         // 排序选择
-        sortSelect.addEventListener('change', renderCloset);
+        //sortSelect.addEventListener('change', renderCloset);
         
         // 删除模态框
         cancelDeleteBtn.addEventListener('click', () => deleteModal.classList.add('hidden'));
