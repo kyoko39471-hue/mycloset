@@ -822,6 +822,8 @@
             const sortedCloset = sortCloset(localClosetCache);
 
             sortedCloset.forEach(item => {
+                const cpw = calculateCPW(item.price, item.timesWorn);
+                const cpwColor = getCPWColor(cpw);
                 const li = document.createElement('label');
                 li.className = "flex items-center space-x-3 bg-slate-50 p-3 rounded-lg hover:bg-slate-100 cursor-pointer";
                 li.innerHTML = `
@@ -832,6 +834,9 @@
                         <span class="editable" data-id="${item.id}" data-field="brand" title="双击编辑品牌">${escapeHTML(item.brand || "—")}</span>
                         · ${escapeHTML(item.type)} ·
                         <span class="editable" data-id="${item.id}" data-field="name" title="双击编辑名称">${escapeHTML(item.name)}</span>
+                    </span>
+                    <span class="ml-3 text-xs font-semibold ${cpwColor}">
+                        $${cpw}
                     </span>
                 `;
                 logWearList.appendChild(li);
@@ -1463,5 +1468,6 @@ function enableInlineEditing() {
     </script>
 </body>
 </html>
+
 
 
