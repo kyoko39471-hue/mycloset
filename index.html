@@ -23,6 +23,35 @@
             top: 0;
             z-index: 50;
         }
+
+        .sidebar {
+            width: 180px;
+            background-color: #f8fafc;
+            border-right: 1px solid #e5e7eb;
+            padding: 16px 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .sidebar-btn {
+            width: 100%;
+            padding: 12px 0;
+            margin-bottom: 8px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 6px;
+            transition: 0.2s;
+            cursor: pointer;
+            background-color: transparent;
+            border: none;
+            color: #475569;
+        }
+
+        .sidebar-btn.active {
+            background-color: #dbeafe; /* 淡蓝色背景，类似 OneNote 选中效果 */
+            color: #1d4ed8;           /* 蓝色文字 */
+        }
+
         /* 确保内容区域可滚动 */
         .content-area {
             height: calc(100vh - 12rem); /* 减去头部和底部的空间 */
@@ -75,176 +104,311 @@
 </head>
 <body class="antialiased text-slate-800">
 
-    <div class="max-w-4xl mx-auto min-h-screen bg-white shadow-lg">
-
-        <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col justify-center items-center z-[110]">
-            <div class="loader w-12 h-12 rounded-full border-4 border-gray-200 border-t-blue-500 animate-spin"></div>
-            <p id="loading-text" class="mt-4 text-lg font-medium text-slate-600">正在连接...</p>
-        </div>
-
-        <header class="sticky-header bg-white border-b border-slate-200 p-4 shadow-sm">
-            <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-blue-600">
-                    <i data-lucide="shirt" class="inline-block -mt-1"></i>
-                    我的衣橱 (Cost Per Wear)
-                </h1>
-                <div id="auth-container" class="text-sm">
-                    </div>
-            </div>
-
-            <nav class="mt-4">
-                <div class="flex border-b border-slate-200">
-                    <button id="tab-closet" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-blue-600 border-b-2 border-blue-600 flex items-center justify-center gap-2" disabled>
-                        <i data-lucide="warehouse" class="w-5 h-5"></i>
-                        我的衣橱
-                    </button>
-                    <button id="tab-log" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-slate-500 hover:text-blue-500 flex items-center justify-center gap-2" disabled>
-                        <i data-lucide="calendar-plus" class="w-5 h-5"></i>
-                        记录穿搭
-                    </button>
-                    <button id="tab-history" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-slate-500 hover:text-blue-500 flex items-center justify-center gap-2" disabled>
-                        <i data-lucide="history" class="w-5 h-5"></i>
-                        穿搭历史
-                    </button>
-                    <button id="tab-add" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-slate-500 hover:text-blue-500 flex items-center justify-center gap-2" disabled>
-                        <i data-lucide="plus-circle" class="w-5 h-5"></i>
-                        添加新衣
-                    </button>
-                </div>
-            </nav>
-        </header>
-
-        <main class="p-4 sm:p-6">
-            <div id="not-signed-in" class="text-center py-16 hidden">
-                <i data-lucide="lock-keyhole" class="w-16 h-16 mx-auto text-blue-400 mb-4"></i>
-                <h2 class="text-xl font-bold text-slate-800 mb-2">请登录或注册以访问您的衣橱</h2>
-                <p class="text-slate-600 mb-6">使用电子邮件和密码登录或创建账户。</p>
-                
-                <form id="auth-form" class="max-w-xs mx-auto space-y-3 p-4 bg-white rounded-lg shadow-md border border-slate-200">
-                    <div>
-                        <input type="email" id="auth-email" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="电子邮箱 (Email)">
-                    </div>
-                    <div>
-                        <input type="password" id="auth-password" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="密码 (Password)">
-                    </div>
-                    <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
-                        <i data-lucide="log-in" class="w-5 h-5"></i> 登录
-                    </button>
-                    <button type="button" id="toggle-sign-up" class="w-full text-sm text-slate-500 hover:text-blue-600">
-                        还没有账户？**点击注册**
-                    </button>
-                </form>
-            </div>
-            
-            <div id="page-closet" class="page-content">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-center w-full mx-auto">衣橱总览</h2>
-                    <!--<select id="sort-select" class="rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
-                        <option value="cpw_desc">按CPW降序 (最贵)</option>
-                        <option value="cpw_asc">按CPW升序 (最值)</option>
-                        <option value="type_asc">按类型升序</option>
-                        <option value="type_desc">按类型降序</option>
-                        <option value="times_asc">按穿下次数升序</option>
-                        <option value="times_desc">按穿下次数降序</option>
-                        <option value="name_asc">按名称升序 (A-Z)</option>
-                    </select>-->
-                </div>
-                
-                <div class="hidden sm:block overflow-x-auto rounded-lg border border-slate-200">
-                    <table class="min-w-full divide-y divide-slate-200">
-                        <thead class="bg-slate-50">
-                            <tr>
-                                <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">品牌</th>
-                                <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">名称</th>
-                                <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">类型</th>
-                                <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">价格</th>
-                                <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">已穿</th>
-                                <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">CPW</th>
-                                <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="closet-table-body" class="bg-white divide-y divide-slate-200">
-                            <tr id="closet-empty-row"><td colspan="6" class="p-6 text-center text-slate-500">衣橱是空的，快去添加新衣服吧！</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div id="closet-card-list" class="sm:hidden space-y-3">
-                    <div id="closet-empty-card" class="p-6 text-center text-slate-500 bg-white rounded-lg shadow-sm">衣橱是空的，快去添加新衣服吧！</div>
-                </div>
-            </div>
-
-            <div id="page-log" class="page-content hidden">
-                <h2 class="text-xl font-semibold mb-4">记录今日穿搭 (Today's Outfit)</h2>
-                <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
-                    <p class="text-slate-600 mb-4">请选择你今天穿了的衣服：</p>
-                    <div id="log-wear-list" class="space-y-3 max-h-96 overflow-y-auto pr-2">
-                        <p id="log-empty-list" class="text-center text-slate-500 py-4">衣橱里没有衣服哦。</p>
-                    </div>
-                    <button id="submit-log-wear" class="mt-6 w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2">
-                        <i data-lucide="check-circle" class="w-5 h-5"></i>
-                        确认记录
-                    </button>
-                </div>
-            </div>
-            
-            <div id="page-history" class="page-content hidden">
-                <h2 class="text-xl font-semibold mb-4">我的穿搭历史</h2>
-                <div id="history-list" class="space-y-4">
-                    <p id="history-empty" class="p-6 text-center text-slate-500 bg-white rounded-lg shadow-sm">还没有穿搭记录哦。</p>
-                </div>
-            </div>
-
-            <div id="page-add" class="page-content hidden">
-                <h2 class="text-xl font-semibold mb-4">添加新衣服</h2>
-                <form id="add-item-form" class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 space-y-4">
-                    <div>
-                        <label for="brand-select" class="block text-sm font-medium text-slate-700">品牌 (Brand)</label>
-                        <select id="brand-select" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
-                        <option value="">-- 请选择品牌 --</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="item-name" class="block text-sm font-medium text-slate-700">衣服名称 (Name)</label>
-                        <input type="text" id="item-name" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="例如: 灰色卫衣">
-                    </div>
-                    <div>
-                        <label for="item-type" class="block text-sm font-medium text-slate-700">类型 (Type)</label>
-                        <select id="item-type" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
-                            <option value="">-- 请选择类型 --</option>
-                            <option value="accessory">配饰 (Accessory)</option>
-                            <option value="cami">吊带 (Cami)</option>
-                            <option value="dress">连衣裙 (Dress)</option>
-                            <option value="jacket">外套 (Jacket)</option>
-                            <option value="long-sleeve">长袖 (Long-sleeve)</option>
-                            <option value="pants">裤子 (Pants)</option>
-                            <option value="short-sleeve">短袖 (Short-sleeve)</option>
-                            <option value="skirt">裙子 (Skirt)</option>
-                            <option value="other">其他 (Other)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="item-price" class="block text-sm font-medium text-slate-700">价格 (Price)</label>
-                        <input type="number" id="item-price" min="0" step="0.01" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="例如: 40.00">
-                    </div>
-                    <div>
-                        <label for="item-times-worn" class="block text-sm font-medium text-slate-700">初始已穿次数 (Times Worn)</label>
-                        <input type="number" id="item-times-worn" min="0" step="1" value="0" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
-                    </div>
-                    <button type="submit" class="w-full bg-green-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 flex items-center justify-center gap-2">
-                        <i data-lucide="save" class="w-5 h-5"></i>
-                        保存到衣橱
-                    </button>
-                </form>
-            </div>
-        </main>
-
+    <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col justify-center items-center z-[110]">
+        <div class="loader w-12 h-12 rounded-full border-4 border-gray-200 border-t-blue-500 animate-spin"></div>
+        <p id="loading-text" class="mt-4 text-lg font-medium text-slate-600">正在连接...</p>
     </div>
 
+    <div id="not-signed-in" class="text-center py-16 hidden">
+        <i data-lucide="lock-keyhole" class="w-16 h-16 mx-auto text-blue-400 mb-4"></i>
+        <h2 class="text-xl font-bold text-slate-800 mb-2">请登录或注册以访问您的物品管理系统</h2>
+        <p class="text-slate-600 mb-6">使用电子邮件和密码登录或创建账户。</p>
+        
+        <form id="auth-form" class="max-w-xs mx-auto space-y-3 p-4 bg-white rounded-lg shadow-md border border-slate-200">
+            <div>
+                <input type="email" id="auth-email" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="电子邮箱 (Email)">
+            </div>
+            <div>
+                <input type="password" id="auth-password" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="密码 (Password)">
+            </div>
+            <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                <i data-lucide="log-in" class="w-5 h-5"></i> 登录
+            </button>
+            <button type="button" id="toggle-sign-up" class="w-full text-sm text-slate-500 hover:text-blue-600">
+                还没有账户？**点击注册**
+            </button>
+        </form>
+    </div>
+
+    <div class="apps-shell flex min-h-screen max-w-6xl mx-auto px-4">
+        <!-- 左侧 sidebar -->
+        <aside class="sidebar"> <!--左侧 sidebar-->
+            <button class="sidebar-btn active" data-app="closet">
+                我的衣橱
+            </button>
+            <button class="sidebar-btn" data-app="makeup">
+                化妆品 CPW
+            </button>
+        </aside>
+        <!-- 右侧主内容区 -->
+        <div class="app-main flex-1">
+            <!-- 一个大盒子：装着页面主要内容（标题、tab、表格等）。div 是“盒子”，不是函数,是html里的标签，用来 装内容、摆东西、排版 -->
+            <div class="max-w-4xl min-h-screen bg-white shadow-lg ml-6">
+
+                <div id="app-closet" class="app-container">
+
+                    <header class="sticky-header bg-white border-b border-slate-200 p-4 shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <h1 class="text-2xl font-bold text-blue-600">
+                                <i data-lucide="shirt" class="inline-block -mt-1"></i>
+                                我的衣橱 (Cost Per Wear)
+                            </h1>
+                            <div id="auth-container" class="text-sm">
+                                </div>
+                        </div>
+
+                        <nav class="mt-4">
+                            <div class="flex border-b border-slate-200">
+                                <button id="tab-closet" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-blue-600 border-b-2 border-blue-600 flex items-center justify-center gap-2">
+                                    <i data-lucide="warehouse" class="w-5 h-5"></i>
+                                    我的衣橱
+                                </button>
+                                <button id="tab-log" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-slate-500 hover:text-blue-500 flex items-center justify-center gap-2">
+                                    <i data-lucide="calendar-plus" class="w-5 h-5"></i>
+                                    记录穿搭
+                                </button>
+                                <button id="tab-history" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-slate-500 hover:text-blue-500 flex items-center justify-center gap-2">
+                                    <i data-lucide="history" class="w-5 h-5"></i>
+                                    穿搭历史
+                                </button>
+                                <button id="tab-add" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-slate-500 hover:text-blue-500 flex items-center justify-center gap-2">
+                                    <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                                    添加新衣
+                                </button>
+                            </div>
+                        </nav>
+                    </header>
+
+                    <main class="p-4 sm:p-6">
+                        
+                        <div id="page-closet" class="page-content">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-semibold text-center w-full mx-auto">衣橱总览</h2>
+                                <!--<select id="sort-select" class="rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                                    <option value="cpw_desc">按CPW降序 (最贵)</option>
+                                    <option value="cpw_asc">按CPW升序 (最值)</option>
+                                    <option value="type_asc">按类型升序</option>
+                                    <option value="type_desc">按类型降序</option>
+                                    <option value="times_asc">按穿下次数升序</option>
+                                    <option value="times_desc">按穿下次数降序</option>
+                                    <option value="name_asc">按名称升序 (A-Z)</option>
+                                </select>-->
+                            </div>
+                            
+                            <div class="hidden sm:block overflow-x-auto rounded-lg border border-slate-200">
+                                <table class="min-w-full divide-y divide-slate-200">
+                                    <thead class="bg-slate-50">
+                                        <tr>
+                                            <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">品牌</th>
+                                            <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">名称</th>
+                                            <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">类型</th>
+                                            <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">价格</th>
+                                            <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">已穿</th>
+                                            <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">CPW</th>
+                                            <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="closet-table-body" class="bg-white divide-y divide-slate-200">
+                                        <tr id="closet-empty-row"><td colspan="6" class="p-6 text-center text-slate-500">衣橱是空的，快去添加新衣服吧！</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div id="closet-card-list" class="sm:hidden space-y-3">
+                                <div id="closet-empty-card" class="p-6 text-center text-slate-500 bg-white rounded-lg shadow-sm">衣橱是空的，快去添加新衣服吧！</div>
+                            </div>
+                        </div>
+
+                        <div id="page-log" class="page-content hidden">
+                            <h2 class="text-xl font-semibold mb-4">记录今日穿搭 (Today's Outfit)</h2>
+                            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+                                <p class="text-slate-600 mb-4">请选择你今天穿了的衣服：</p>
+                                <div id="log-wear-list" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                                    <p id="log-empty-list" class="text-center text-slate-500 py-4">衣橱里没有衣服哦。</p>
+                                </div>
+                                <button id="submit-log-wear" class="mt-6 w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2">
+                                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                                    确认记录
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="page-history" class="page-content hidden">
+                            <h2 class="text-xl font-semibold mb-4">我的穿搭历史</h2>
+                            <div id="history-list" class="space-y-4">
+                                <p id="history-empty" class="p-6 text-center text-slate-500 bg-white rounded-lg shadow-sm">还没有穿搭记录哦。</p>
+                            </div>
+                        </div>
+
+                        <div id="page-add" class="page-content hidden">
+                            <h2 class="text-xl font-semibold mb-4">添加新衣服</h2>
+                            <form id="add-item-form" class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 space-y-4">
+                                <div>
+                                    <label for="brand-select" class="block text-sm font-medium text-slate-700">品牌 (Brand)</label>
+                                    <select id="brand-select" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                                    <option value="">-- 请选择品牌 --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="item-name" class="block text-sm font-medium text-slate-700">衣服名称 (Name)</label>
+                                    <input type="text" id="item-name" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="例如: 灰色卫衣">
+                                </div>
+                                <div>
+                                    <label for="item-type" class="block text-sm font-medium text-slate-700">类型 (Type)</label>
+                                    <select id="item-type" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                                        <option value="">-- 请选择类型 --</option>
+                                        <option value="accessory">配饰 (Accessory)</option>
+                                        <option value="cami">吊带 (Cami)</option>
+                                        <option value="dress">连衣裙 (Dress)</option>
+                                        <option value="jacket">外套 (Jacket)</option>
+                                        <option value="long-sleeve">长袖 (Long-sleeve)</option>
+                                        <option value="pants">裤子 (Pants)</option>
+                                        <option value="short-sleeve">短袖 (Short-sleeve)</option>
+                                        <option value="skirt">裙子 (Skirt)</option>
+                                        <option value="other">其他 (Other)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="item-price" class="block text-sm font-medium text-slate-700">价格 (Price)</label>
+                                    <input type="number" id="item-price" min="0" step="0.01" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="例如: 40.00">
+                                </div>
+                                <div>
+                                    <label for="item-times-worn" class="block text-sm font-medium text-slate-700">初始已穿次数 (Times Worn)</label>
+                                    <input type="number" id="item-times-worn" min="0" step="1" value="0" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                                </div>
+                                <button type="submit" class="w-full bg-green-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 flex items-center justify-center gap-2">
+                                    <i data-lucide="save" class="w-5 h-5"></i>
+                                    保存到衣橱
+                                </button>
+                            </form>
+                        </div>
+                    </main>
+                </div>
+
+                <div id="app-makeup" class="app-container hidden">
+                    <header class="sticky-header bg-white border-b border-slate-200 p-4 shadow-sm">
+                        <div class="flex justify-center items-center">
+                            <h1 class="text-2xl font-bold text-blue-600">
+                                <i data-lucide="heart" class="inline-block -mt-1"></i> <!--心型标志-->
+                                化妆品柜 (Cost Per Wear)
+                            </h1>
+                        </div>
+                        
+                        <nav class="mt-4">
+                            <div class="flex border-b border-slate-200">
+                                <button id="tab-makeupshelf" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-blue-600 border-b-2 border-blue-600 flex items-center justify-center gap-2">
+                                    <i data-lucide="warehouse" class="w-5 h-5"></i>
+                                    化妆品单
+                                </button>
+                                <button id="tab-makeuplog" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-slate-500 hover:text-blue-500 flex items-center justify-center gap-2">
+                                    <i data-lucide="calendar-plus" class="w-5 h-5"></i>
+                                    使用记录
+                                </button>
+                                <button id="tab-makeuphistory" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-slate-500 hover:text-blue-500 flex items-center justify-center gap-2">
+                                    <i data-lucide="history" class="w-5 h-5"></i>
+                                    化妆历史
+                                </button>
+                                <button id="tab-makeupadd" class="tab-btn flex-1 py-3 px-4 text-center font-semibold text-slate-500 hover:text-blue-500 flex items-center justify-center gap-2">
+                                    <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                                    添加新品
+                                </button>
+                            </div>
+                        </nav>
+                    </header>
+
+                    <main class="p-4 sm:p-6">
+                        <div id="page-makeupshelf" class="page-content">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-semibold text-center w-full mx-auto">化妆品总览</h2>
+                            </div>
+                            
+                            <div class="hidden sm:block overflow-x-auto rounded-lg border border-slate-200">
+                                <table class="min-w-full divide-y divide-slate-200">
+                                    <thead class="bg-slate-50">
+                                        <tr>
+                                            <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">类型</th>
+                                            <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">品牌</th>
+                                            <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">名称</th>
+                                            <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">价格</th>
+                                            <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">已用</th>
+                                            <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">CPW</th>
+                                            <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="makeup-table-body" class="bg-white divide-y divide-slate-200">
+                                        <tr id="makeup-empty-row"><td colspan="6" class="p-6 text-center text-slate-500">化妆品类是空的，快去添加吧！</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div id="makeup-card-list" class="sm:hidden space-y-3">
+                                <div id="makeup-empty-card" class="p-6 text-center text-slate-500 bg-white rounded-lg shadow-sm">化妆品类是空的，快去添加吧！</div>
+                            </div>
+                        </div>
+                        <div id="page-makeuplog" class="page-content hidden">
+                            <h2 class="text-xl font-semibold mb-4">今日记录</h2>
+                            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+                                <p class="text-slate-600 mb-4">请选择你今天使用的产品：</p>
+                                <div id="log-makeup-list" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                                    <p id="log-makeup-empty-list" class="text-center text-slate-500 py-4">目前没有产品哦。</p>
+                                </div>
+                                <button id="submit-log-makeup" class="mt-6 w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2">
+                                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                                    确认记录
+                                </button>
+                            </div>
+                        </div>
+                        <div id="page-makeupadd" class="page-content hidden">
+                            <h2 class="text-xl font-semibold mb-4">添加新化妆品</h2>
+                            <form id="add-makeup-form" class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 space-y-4">
+                                <div>
+                                    <label for="makeup-brand-select" class="block text-sm font-medium text-slate-700">品牌 (Brand)</label>
+                                    <select id="makeup-brand-select" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                                    <option value="">-- 请选择品牌 --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="makeup-item-name" class="block text-sm font-medium text-slate-700">化妆品名称 (Name)</label>
+                                    <input type="text" id="makeup-item-name" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="例如: 泡泡粉底液">
+                                </div>
+                                <div>
+                                    <label for="makeup-item-type" class="block text-sm font-medium text-slate-700">类型 (Type)</label>
+                                    <select id="makeup-item-type" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                                        <option value="">-- 请选择类型 --</option>
+                                        <option value="foundation">粉底液</option>
+                                        <option value="concealer">遮瑕</option>
+                                        <option value="blush">腮红</option>
+                                        <option value="lipstick">口红</option>
+                                        <option value="lipgloss">唇釉</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="makeup-item-price" class="block text-sm font-medium text-slate-700">价格 (Price)</label>
+                                    <input type="number" id="makeup-item-price" min="0" step="0.01" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="例如: 40.00">
+                                </div>
+                                <div>
+                                    <label for="makeup-item-times-used" class="block text-sm font-medium text-slate-700">初始已用次数 (Times Used)</label>
+                                    <input type="number" id="makeup-item-times-used" min="0" step="1" value="0" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                                </div>
+                                <button type="submit" class="w-full bg-green-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 flex items-center justify-center gap-2">
+                                    <i data-lucide="save" class="w-5 h-5"></i>
+                                    保存到化妆架
+                                </button>
+                            </form>
+                        </div>
+                    </main>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!--一个“提示小条”盒子：#toast，用来短暂弹出提示。-->
     <div id="toast" class="py-3 px-5 rounded-lg shadow-lg text-white font-semibold">
         <span id="toast-message">...</span>
     </div>
 
+    <!--一个“弹窗对话框”盒子：#delete-modal，用来做删除确认弹窗。-->
     <div id="delete-modal" class="hidden">
         <div class="modal-backdrop"></div>
         <div class="modal-content w-full max-w-sm bg-white rounded-lg shadow-xl p-6">
@@ -262,9 +426,8 @@
         </div>
     </div>
 
-
     <script type="module">
-        // 导入Firebase模块
+        // 1）导入Firebase模块
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { 
             getAuth, 
@@ -289,11 +452,17 @@
             arrayUnion 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- 全局变量和Firebase设置 ---
+        // 2）全局常量和Firebase设置
+        const COLLECTIONS = {
+            closet: 'closet',
+            wearLogs: 'wear_logs',
+            makeup: 'makeup',
+            makeupLogs: 'makeup_logs',
+        };
         
         setLogLevel('Debug');
 
-        const appId = 'github-cpw-tracker'; 
+        const firebaseProjectId = 'github-cpw-tracker'; 
         
         const YOUR_FIREBASE_CONFIG = {
             apiKey: "AIzaSyBmMDiNLEwJ7kPLgsbNaTrwCst_0vAa-jQ", 
@@ -313,34 +482,95 @@
             return YOUR_FIREBASE_CONFIG;
         })();
 
-        // 初始化Firebase相关变量
+        // 3）全局变量
         let app, auth, db;
         let userId = null;
         let isAuthReady = false;
         let userEmail = null;
+        let currentApp = 'closet';// 当前激活的子 app（默认是衣橱）
+
+        //删：穿搭相关的旧世界全局变量
         let closetRef = null;
         let localClosetCache = []; 
         let unsubscribeCloset = null; 
         
-        // 穿搭历史相关变量
         let wearLogsRef = null;
         let localWearLogsCache = []; 
         let unsubscribeWearLogs = null; 
         
-        // 删除状态：衣橱物品删除状态
         let currentDeleteItem = { id: null, name: null }; 
-        // 删除状态：穿搭记录删除状态
         let currentDeleteLog = { id: null, itemIds: [] }; 
         
         let isSignUpMode = false; 
 
-        // DOM 元素
+        // 4）Closet 模块变量（新世界）
+        const ClosetApp = {
+            // Firestore 引用
+            closetRef: null,
+            wearLogsRef: null,
+            unsubscribeCloset: null,
+            unsubscribeWearLogs: null,
+
+            // 本地缓存
+            localClosetCache: [],
+            localWearLogsCache: [],
+
+            // 删除状态
+            currentDeleteItem: { id: null, name: null },
+            currentDeleteLog: { id: null, itemIds: [] },
+
+            // DOM 引用（后面 initDom 里填）
+            elements: {},
+        };
+       
+        // 5）Switch App
+        function switchApp(appId) {
+            currentApp = appId;  
+             // 1. 先把所有 app 容器都隐藏
+            const allApps = document.querySelectorAll('.app-container');
+            allApps.forEach(appEl => {
+                appEl.classList.add('hidden');
+            });
+
+            // 2. 再显示目标 app 容器（id 规则：app-closet / app-makeup / ...）
+            const target = document.getElementById(`app-${appId}`);
+            if (target) {
+                target.classList.remove('hidden');
+            } else {
+                console.warn('没有找到 app 容器：', `app-${appId}`);
+            }
+            // 3) 更新 sidebar 按钮的 active 状态
+            const buttons = document.querySelectorAll('.sidebar-btn');
+            buttons.forEach(btn => {
+                if (btn.dataset.app === appId) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+        window.switchApp = switchApp;
+
+        // sidebar - switch app
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebarButtons = document.querySelectorAll('.sidebar-btn');
+
+            sidebarButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const appId = btn.dataset.app;   // 例如 'closet'
+                    switchApp(appId);               // 切换到该 app
+                });
+            });
+        });
+
+        // DOM 元素 开始了，第三步！
         const loadingOverlay = document.getElementById('loading-overlay');
         const loadingText = document.getElementById('loading-text');
         const authContainer = document.getElementById('auth-container');
         const notSignedInDiv = document.getElementById('not-signed-in');
         
         // Tabs 映射
+        const appShell = document.querySelector('.apps-shell');
         const tabs = {
             closet: document.getElementById('tab-closet'),
             log: document.getElementById('tab-log'),
@@ -390,11 +620,14 @@
         "Aritzia",
         "Brandy Melville",
         "Cotton On",
+        "Daphne",
         "Hollister",
         "Hongdae",
+        "Hotwind",
         "Lululemon",
         "MLB",
         "Olive des Olive",
+        "OOMOMO",
         "Sistina",
         "Trader Joes",
         ];
@@ -499,7 +732,7 @@
         }
 
         /**
-         * 2. 设置认证监听器
+         * 2. 用户登录认证监听器
          */
         function setupAuthListener() {
             onAuthStateChanged(auth, async (user) => {
@@ -511,13 +744,19 @@
                     userId = user.uid;
                     userEmail = user.email || 'N/A';
                     
-                    notSignedInDiv.classList.add('hidden');
-                    switchTab('closet'); 
-                    Object.values(tabs).forEach(tab => tab.disabled = false);
+                    // 显示整个 app（sidebar + closet + makeup）
+                    if (appShell) {
+                        appShell.classList.remove('hidden');
+                    }
 
+                    notSignedInDiv.classList.add('hidden');
+
+                    switchTab('closet'); 
+
+                    const emailPrefix = userEmail.split('@')[0];
                     authContainer.innerHTML = `
                         <div class="flex items-center gap-3 text-xs text-slate-500">
-                            <span class="inline-block max-w-[120px] sm:max-w-[260px] truncate text-slate-800 text-slate-800 font-medium">${escapeHTML(userEmail)}</span>
+                            <span class="inline-block max-w-[120px] sm:max-w-[260px] truncate text-slate-800 text-slate-800 font-medium">${escapeHTML(emailPrefix)}</span>
                             <button id="sign-out-btn" class="text-red-500 hover:text-red-700 font-semibold p-1 rounded-md transition-colors">
                                 <i data-lucide="log-out" class="w-4 h-4 inline-block -mt-0.5"></i> 注销
                             </button>
@@ -529,12 +768,12 @@
                     loadingOverlay.classList.remove('hidden'); 
                     
                     // 定义集合引用
-                    const closetColPath = `/artifacts/${appId}/users/${userId}/closet`;
+                    const closetColPath = `/artifacts/${firebaseProjectId}/users/${userId}/closet`;
                     closetRef = collection(db, closetColPath);
                     console.log("Firestore 路径:", closetColPath);
                     
                     // 穿搭记录集合引用
-                    const wearLogsColPath = `/artifacts/${appId}/users/${userId}/wear_logs`;
+                    const wearLogsColPath = `/artifacts/${firebaseProjectId}/users/${userId}/wear_logs`;
                     wearLogsRef = collection(db, wearLogsColPath);
                     console.log("Wear Logs 路径:", wearLogsColPath);
 
@@ -547,7 +786,6 @@
                 } else {
                     // --- 用户未登录 ---
                     console.log("Firebase b. (用户未认证). 显示登录界面.");
-                    
                     userId = null;
                     userEmail = null;
                     if (unsubscribeCloset) unsubscribeCloset(); 
@@ -555,12 +793,11 @@
                     localClosetCache = []; 
                     localWearLogsCache = []; 
                     
-                    Object.values(tabs).forEach(tab => tab.disabled = true);
-                    
-                    renderCloset();
-                    renderLogWearPage();
-                    renderWearHistoryPage(); 
-                    
+                    // 隐藏整个 app shell（sidebar + header + 内容）
+                    if (appShell) {
+                        appShell.classList.add('hidden');
+                    }
+
                     loadingOverlay.classList.add('hidden'); 
                     notSignedInDiv.classList.remove('hidden'); 
                     
@@ -1088,14 +1325,6 @@
         showToast("名称未改变。", 'info');
         return;
         }
-        // Optional: prevent duplicate names (case-insensitive)
-        //const exists = (localClosetCache || []).some(i =>
-        //i.id !== itemId && i.name && i.name.toLowerCase() === newName.toLowerCase()
-        //);
-        //if (exists) {
-        //showToast("已存在同名衣物，请换一个名称。", 'error');
-        //return;
-        //}
 
         try {
             const itemRef = doc(db, closetRef.path, itemId);
@@ -1132,9 +1361,7 @@
         }
 
         
-        /**
-         * 10. 处理删除衣物 (未修改)
-         */
+        /*** 10. 处理删除衣物 */
         async function handleDeleteItemFromCloset() {
             if (!isAuthReady || !closetRef || !currentDeleteItem.id) return;
             
@@ -1296,23 +1523,6 @@
                 const cpwB = parseFloat(calculateCPW(b.price, b.timesWorn));
                 return cpwB - cpwA;
 
-                //switch (sortBy) {//排序的关键函数
-                    //case 'cpw_desc': return cpwB - cpwA; 
-                    //case 'cpw_asc': return cpwA - cpwB; 
-                    //case 'times_asc': return a.timesWorn - b.timesWorn; 
-                    //case 'times_desc': return b.timesWorn - a.timesWorn; 
-                    //case 'name_asc': return a.name.localeCompare(b.name, 'zh-Hans-CN'); 
-                    //case 'brand_asc_cpw_desc': {
-                        //const brandA = a.brand.trim();
-                        //const brandB = b.brand.trim();
-
-                        //const byBrand = brandA.localeCompare(brandB, 'zh-Hans-CN');
-                        //if (byBrand !== 0) return byBrand;}
-                    //case 'type_asc': return a.type.localeCompare(b.type, 'zh-Hans-CN');
-                    //case 'type_desc':return b.type.localeCompare(a.type, 'zh-Hans-CN');
-                    //default: return cpwB - cpwA;
-                    //}
-
             });
         }
 
@@ -1349,86 +1559,86 @@
         }
 
         // 允许更新的字段白名单
-const EDITABLE_FIELDS = new Set(['brand', 'name']);
+        const EDITABLE_FIELDS = new Set(['brand', 'name']);
 
-// 保存字段到 Firestore
-async function saveItemField(itemId, field, newValue) {
-  if (!EDITABLE_FIELDS.has(field)) {
-    showToast('不支持的字段：' + field, 'error');
-    return;
-  }
-  if (!isAuthReady || !closetRef || !userId) {
-    showToast("请先登录才能编辑！", 'error');
-    return;
-  }
-  const itemRef = doc(db, closetRef.path, itemId);
-  // 去掉首尾空格
-  const value = (newValue || '').trim();
-  if (!value) {
-    showToast('内容不能为空', 'warning');
-    return;
-  }
-  await updateDoc(itemRef, { [field]: value });
-  showToast((field === 'brand' ? '品牌' : '名称') + '已更新。', 'success');
-}
-
-// 开启双击就地编辑（事件委托，全局一次即可）
-function enableInlineEditing() {
-  // 在整个主容器里代理（也可以针对 page-closet/page-log 容器）
-  document.addEventListener('dblclick', (e) => {
-    const el = e.target;
-    if (!el.classList || !el.classList.contains('editable')) return;
-
-    const itemId = el.dataset.id;
-    const field = el.dataset.field;
-    const oldText = el.textContent;
-
-    // 创建输入框替换
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = oldText;
-    input.className = 'border border-slate-300 rounded px-2 py-1 text-sm w-auto max-w-[240px]';
-    // 防止父级 label 勾选 checkbox
-    input.addEventListener('click', ev => ev.stopPropagation());
-
-    // 提交函数
-    const commit = async () => {
-      const newText = input.value;
-      // 还原显示
-      el.textContent = newText;
-      el.style.display = '';
-      input.remove();
-      if (newText !== oldText) {
-        try {
-          await saveItemField(itemId, field, newText);
-        } catch (err) {
-          console.error(err);
-          showToast('保存失败：' + err.message, 'error');
-          // 回退旧文本
-          el.textContent = oldText;
+        // 保存字段到 Firestore
+        async function saveItemField(itemId, field, newValue) {
+        if (!EDITABLE_FIELDS.has(field)) {
+            showToast('不支持的字段：' + field, 'error');
+            return;
         }
-      }
-    };
+        if (!isAuthReady || !closetRef || !userId) {
+            showToast("请先登录才能编辑！", 'error');
+            return;
+        }
+        const itemRef = doc(db, closetRef.path, itemId);
+        // 去掉首尾空格
+        const value = (newValue || '').trim();
+        if (!value) {
+            showToast('内容不能为空', 'warning');
+            return;
+        }
+        await updateDoc(itemRef, { [field]: value });
+        showToast((field === 'brand' ? '品牌' : '名称') + '已更新。', 'success');
+        }
 
-    // 取消函数（Esc）
-    const cancel = () => {
-      el.style.display = '';
-      input.remove();
-    };
+        // 开启双击就地编辑（事件委托，全局一次即可）
+        function enableInlineEditing() {
+        // 在整个主容器里代理（也可以针对 page-closet/page-log 容器）
+        document.addEventListener('dblclick', (e) => {
+            const el = e.target;
+            if (!el.classList || !el.classList.contains('editable')) return;
 
-    // 放入 DOM
-    el.style.display = 'none';
-    el.parentNode.insertBefore(input, el);
-    input.focus();
-    input.select();
+            const itemId = el.dataset.id;
+            const field = el.dataset.field;
+            const oldText = el.textContent;
 
-    input.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter') commit();
-      else if (ev.key === 'Escape') cancel();
-    });
-    input.addEventListener('blur', commit);
-  });
-}
+            // 创建输入框替换
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = oldText;
+            input.className = 'border border-slate-300 rounded px-2 py-1 text-sm w-auto max-w-[240px]';
+            // 防止父级 label 勾选 checkbox
+            input.addEventListener('click', ev => ev.stopPropagation());
+
+            // 提交函数
+            const commit = async () => {
+            const newText = input.value;
+            // 还原显示
+            el.textContent = newText;
+            el.style.display = '';
+            input.remove();
+            if (newText !== oldText) {
+                try {
+                await saveItemField(itemId, field, newText);
+                } catch (err) {
+                console.error(err);
+                showToast('保存失败：' + err.message, 'error');
+                // 回退旧文本
+                el.textContent = oldText;
+                }
+            }
+            };
+
+            // 取消函数（Esc）
+            const cancel = () => {
+            el.style.display = '';
+            input.remove();
+            };
+
+            // 放入 DOM
+            el.style.display = 'none';
+            el.parentNode.insertBefore(input, el);
+            input.focus();
+            input.select();
+
+            input.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter') commit();
+            else if (ev.key === 'Escape') cancel();
+            });
+            input.addEventListener('blur', commit);
+        });
+        }
 
         // --- 事件监听器绑定 ---
         
@@ -1466,8 +1676,8 @@ function enableInlineEditing() {
         });
 
     </script>
+
 </body>
 </html>
-
 
 
